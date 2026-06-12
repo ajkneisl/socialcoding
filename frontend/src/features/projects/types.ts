@@ -1,4 +1,4 @@
-import type {DesignDoc} from '../design/types'
+import type { DesignDoc } from '../design/types'
 
 export type ProjectStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 

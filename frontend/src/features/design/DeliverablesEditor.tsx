@@ -1,17 +1,19 @@
-import type {ProjectMember} from '../projects/types'
-import type {EditableTask} from './tasks'
+import type { ProjectMember } from '../projects/types'
+import type { EditableTask } from './tasks'
+import { Button } from '../../components/Button'
+import { Chip } from '../../components/Chip'
 
 export function DeliverablesEditor({
-                                       tasks,
-                                       team,
-                                       onChange,
-                                   }: {
+    tasks,
+    team,
+    onChange,
+}: {
     tasks: EditableTask[]
     team: ProjectMember[]
     onChange: (tasks: EditableTask[]) => void
 }) {
     function update(i: number, patch: Partial<EditableTask>) {
-        onChange(tasks.map((t, j) => (j === i ? {...t, ...patch} : t)))
+        onChange(tasks.map((t, j) => (j === i ? { ...t, ...patch } : t)))
     }
 
     function remove(i: number) {
@@ -26,49 +28,55 @@ export function DeliverablesEditor({
     }
 
     return (
-        <div className="task-editor">
+        <div className="flex flex-col gap-[0.9rem]">
             {tasks.map((task, i) => (
-                <div key={i} className={`task-edit-row${task.milestone ? ' milestone' : ''}`}>
-                    <div className="form-row">
+                <div
+                    key={i}
+                    className={`flex flex-col gap-[0.6rem] rounded-xl border border-line bg-bg-raised px-[1.1rem] py-4 ${
+                        task.milestone ? 'border-l-[3px] border-l-gold' : ''
+                    }`}
+                >
+                    <div className="flex flex-wrap items-end gap-[0.9rem]">
                         <label>
-                            Task{task.milestone && <span className="muted"> (required milestone)</span>}
+                            Task
+                            {task.milestone && (
+                                <span className="text-text-soft"> (required milestone)</span>
+                            )}
                             <input
                                 value={task.name}
                                 disabled={task.milestone}
                                 required
                                 maxLength={300}
                                 placeholder="e.g. Set up CI pipeline"
-                                onChange={(e) => update(i, {name: e.target.value})}
+                                onChange={(e) => update(i, { name: e.target.value })}
                             />
                         </label>
-                        <label className="task-date">
+                        <label className="flex-[0_0_170px]">
                             Due date
                             <input
                                 type="date"
                                 value={task.dueDate}
-                                onChange={(e) => update(i, {dueDate: e.target.value})}
+                                onChange={(e) => update(i, { dueDate: e.target.value })}
                             />
                         </label>
                         {!task.milestone && (
-                            <button
-                                type="button"
-                                className="btn btn-ghost task-remove"
-                                onClick={() => remove(i)}
-                            >
+                            <Button variant="ghost" className="flex-none" onClick={() => remove(i)}>
                                 Remove
-                            </button>
+                            </Button>
                         )}
                     </div>
                     {team.length > 0 && (
-                        <div className="chip-select">
-                            <span className="mono muted">assigned:</span>
+                        <div className="flex flex-wrap items-center gap-[0.4rem]">
+                            <span className="font-mono text-[0.8rem] text-text-soft">
+                                assigned:
+                            </span>
                             {team.map((m) => {
                                 const on = task.assigneeIds.includes(m.id)
                                 return (
-                                    <button
-                                        type="button"
+                                    <Chip
                                         key={m.id}
-                                        className={`chip${on ? ' chip-active' : ''}`}
+                                        active={on}
+                                        sm
                                         onClick={() =>
                                             update(i, {
                                                 assigneeIds: on
@@ -78,22 +86,24 @@ export function DeliverablesEditor({
                                         }
                                     >
                                         {m.name}
-                                    </button>
+                                    </Chip>
                                 )
                             })}
                         </div>
                     )}
                     {tasks.length > 1 && (
-                        <div className="chip-select">
-                            <span className="mono muted">depends on:</span>
+                        <div className="flex flex-wrap items-center gap-[0.4rem]">
+                            <span className="font-mono text-[0.8rem] text-text-soft">
+                                depends on:
+                            </span>
                             {tasks.map((other, j) => {
                                 if (j === i) return null
                                 const on = task.dependsOn.includes(j)
                                 return (
-                                    <button
-                                        type="button"
+                                    <Chip
                                         key={j}
-                                        className={`chip${on ? ' chip-active' : ''}`}
+                                        active={on}
+                                        sm
                                         onClick={() =>
                                             update(i, {
                                                 dependsOn: on
@@ -103,25 +113,25 @@ export function DeliverablesEditor({
                                         }
                                     >
                                         {other.name || `task ${j + 1}`}
-                                    </button>
+                                    </Chip>
                                 )
                             })}
                         </div>
                     )}
                 </div>
             ))}
-            <button
-                type="button"
-                className="btn btn-ghost"
+            <Button
+                variant="ghost"
+                className="self-start"
                 onClick={() =>
                     onChange([
                         ...tasks,
-                        {name: '', assigneeIds: [], dueDate: '', dependsOn: [], milestone: false},
+                        { name: '', assigneeIds: [], dueDate: '', dependsOn: [], milestone: false },
                     ])
                 }
             >
                 + Add task
-            </button>
+            </Button>
         </div>
     )
 }

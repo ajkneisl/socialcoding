@@ -1,5 +1,5 @@
-import {createContext, useContext} from 'react'
-import type {User} from './features/auth/types'
+import { createContext, useContext } from 'react'
+import type { User } from './features/auth/types'
 
 export const TOKEN_KEY = 'sc_token'
 

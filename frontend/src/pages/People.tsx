@@ -1,7 +1,11 @@
-import {useEffect, useMemo, useState} from 'react'
-import {peopleApi} from '../features/people/api'
-import type {Person} from '../features/people/types'
-import {PersonCard} from '../components/cards'
+import { useEffect, useMemo, useState } from 'react'
+import { peopleApi } from '../features/people/api'
+import type { Person } from '../features/people/types'
+import { PersonCard } from '../features/people/PersonCard'
+import { Chip } from '../components/Chip'
+import { FormError } from '../components/FormError'
+import { SectionHead } from '../components/SectionHead'
+import { page } from '../components/styles'
 
 export default function People() {
     const [people, setPeople] = useState<Person[]>([])
@@ -9,7 +13,10 @@ export default function People() {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        peopleApi.list().then(setPeople).catch((e: Error) => setError(e.message))
+        peopleApi
+            .list()
+            .then(setPeople)
+            .catch((e: Error) => setError(e.message))
     }, [])
 
     const companies = useMemo(() => {
@@ -34,29 +41,26 @@ export default function People() {
     }, [people, query])
 
     return (
-        <section className="section container page">
-            <div className="section-head">
-                <p className="eyebrow mono">People</p>
-                <h2>Members</h2>
-                <p className="muted">
-                    Everyone who has been part of Social Coding. Sign in to add yourself.
-                </p>
-            </div>
+        <section className={page}>
+            <SectionHead eyebrow="People" title="Members">
+                Everyone who has been part of Social Coding. Sign in to add yourself.
+            </SectionHead>
 
             {companies.length > 0 && (
-                <div className="companies">
-                    <h3>Companies our members work at</h3>
-                    <div className="company-chips">
+                <div className="mb-8">
+                    <h3 className="mb-3 text-[1.05rem]">Companies our members work at</h3>
+                    <div className="flex flex-wrap gap-2">
                         {companies.map(([name, count]) => (
-                            <button
+                            <Chip
                                 key={name}
-                                type="button"
-                                className={`chip${query === name ? ' chip-active' : ''}`}
+                                active={query === name}
                                 onClick={() => setQuery(query === name ? '' : name)}
                             >
                                 {name}
-                                {count > 1 && <span className="chip-count">{count}</span>}
-                            </button>
+                                {count > 1 && (
+                                    <span className="font-semibold text-gold">{count}</span>
+                                )}
+                            </Chip>
                         ))}
                     </div>
                 </div>
@@ -64,22 +68,22 @@ export default function People() {
 
             <input
                 type="search"
-                className="search"
+                className="mb-6 w-full max-w-[440px] px-4 py-[0.6rem]"
                 placeholder="Search by name, term, class year, or company…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Search members"
             />
 
-            {error && <p className="form-error">{error}</p>}
+            <FormError error={error} />
 
-            <div className="grid grid-people">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[1.1rem]">
                 {filtered.map((p) => (
-                    <PersonCard key={p.id} person={p}/>
+                    <PersonCard key={p.id} person={p} />
                 ))}
             </div>
             {!error && filtered.length === 0 && (
-                <p className="muted">No members match “{query}”.</p>
+                <p className="text-text-soft">No members match “{query}”.</p>
             )}
         </section>
     )

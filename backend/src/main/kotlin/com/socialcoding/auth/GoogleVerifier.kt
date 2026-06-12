@@ -1,20 +1,14 @@
-package com.socialcoding
+package com.socialcoding.auth
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.JWTVerifier
-import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
-import java.util.Date
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-
-class AuthException(message: String) : RuntimeException(message)
 
 data class GoogleIdentity(
     val sub: String,
@@ -59,19 +53,4 @@ class GoogleVerifier(
         picture = claim("picture"),
     )
   }
-}
-
-/** Issues and verifies the site's own session JWTs after Google sign-in succeeds. */
-class SessionTokens(secret: String, private val issuer: String = "socialcoding") {
-  private val algorithm = Algorithm.HMAC256(secret)
-
-  val verifier: JWTVerifier = JWT.require(algorithm).withIssuer(issuer).build()
-
-  fun issue(userId: Long, role: Role): String =
-      JWT.create()
-          .withIssuer(issuer)
-          .withSubject(userId.toString())
-          .withClaim("role", role.name)
-          .withExpiresAt(Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000))
-          .sign(algorithm)
 }

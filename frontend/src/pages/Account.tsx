@@ -1,15 +1,20 @@
-import {useCallback, useEffect, useState, type FormEvent} from 'react'
-import {Link} from 'react-router-dom'
-import {authApi} from '../features/auth/api'
-import {projectsApi} from '../features/projects/api'
-import type {Project} from '../features/projects/types'
-import {useAuth} from '../auth-context'
-import GoogleSignIn from '../components/GoogleSignIn'
-import {ProjectCard} from '../components/cards'
-import {initials} from '../util'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { authApi } from '../features/auth/api'
+import GoogleSignIn from '../features/auth/GoogleSignIn'
+import { projectsApi } from '../features/projects/api'
+import type { Project } from '../features/projects/types'
+import { ProjectCard } from '../features/projects/ProjectCard'
+import { useAuth } from '../auth-context'
+import { Avatar } from '../components/Avatar'
+import { Button, LinkButton } from '../components/Button'
+import { FormError } from '../components/FormError'
+import { NoticeCard } from '../components/NoticeCard'
+import { PageMessage } from '../components/PageMessage'
+import { card, page } from '../components/styles'
 
 function ProfileForm() {
-    const {user, token, refreshUser} = useAuth()
+    const { user, token, refreshUser } = useAuth()
     const [joinedTerm, setJoinedTerm] = useState(user?.joinedTerm ?? '')
     const [gradYear, setGradYear] = useState(user?.gradYear ? String(user.gradYear) : '')
     const [github, setGithub] = useState(user?.github ?? '')
@@ -41,10 +46,10 @@ function ProfileForm() {
     }
 
     return (
-        <form className="card form" onSubmit={submit}>
-            <h3>Your profile</h3>
-            <p className="muted">This is what shows on the People page.</p>
-            <div className="form-row">
+        <form className={`${card} mb-8 flex flex-col gap-[0.9rem]`} onSubmit={submit}>
+            <h3 className="m-0">Your profile</h3>
+            <p className="m-0 text-text-soft">This is what shows on the People page.</p>
+            <div className="flex flex-wrap gap-[0.9rem]">
                 <label>
                     Joined
                     <input
@@ -66,10 +71,14 @@ function ProfileForm() {
                     />
                 </label>
             </div>
-            <div className="form-row">
+            <div className="flex flex-wrap gap-[0.9rem]">
                 <label>
                     GitHub username
-                    <input value={github} onChange={(e) => setGithub(e.target.value)} placeholder="goldy"/>
+                    <input
+                        value={github}
+                        onChange={(e) => setGithub(e.target.value)}
+                        placeholder="goldy"
+                    />
                 </label>
                 <label>
                     LinkedIn URL
@@ -81,7 +90,7 @@ function ProfileForm() {
                     />
                 </label>
             </div>
-            <div className="form-row">
+            <div className="flex flex-wrap gap-[0.9rem]">
                 <label>
                     Portfolio website
                     <input
@@ -100,95 +109,84 @@ function ProfileForm() {
                     />
                 </label>
             </div>
-            {error && <p className="form-error">{error}</p>}
-            {saved && <p className="form-success">Profile saved.</p>}
-            <button className="btn btn-ghost" type="submit">
+            <FormError error={error} />
+            {saved && <p className="m-0 text-green-400">Profile saved.</p>}
+            <Button variant="ghost" type="submit" className="self-start">
                 Save profile
-            </button>
+            </Button>
         </form>
     )
 }
 
 export default function Account() {
-    const {user, token, loading, logout} = useAuth()
+    const { user, token, loading, logout } = useAuth()
     const [myProjects, setMyProjects] = useState<Project[]>([])
     const [loginError, setLoginError] = useState<string | null>(null)
 
     useEffect(() => {
         if (token && user) {
-            projectsApi.mine(token).then(setMyProjects).catch(() => setMyProjects([]))
+            projectsApi
+                .mine(token)
+                .then(setMyProjects)
+                .catch(() => setMyProjects([]))
         }
     }, [token, user])
 
     const onLoginError = useCallback((message: string) => setLoginError(message), [])
 
     if (loading) {
-        return (
-            <section className="section container page">
-                <p className="muted">Loading…</p>
-            </section>
-        )
+        return <PageMessage>Loading…</PageMessage>
     }
 
     if (!user) {
         return (
-            <section className="section container page narrow">
-                <div className="card signin-card">
-                    <p className="eyebrow mono">Account</p>
-                    <h2>Sign in</h2>
-                    <p className="muted">
-                        Use your University of Minnesota Google account (<strong>@umn.edu</strong>). Other
-                        accounts won't work.
-                    </p>
-                    <GoogleSignIn onError={onLoginError}/>
-                    {loginError && <p className="form-error">{loginError}</p>}
-                </div>
-            </section>
+            <NoticeCard eyebrow="Account" title="Sign in">
+                <p className="text-text-soft">
+                    Use your University of Minnesota Google account (<strong>@umn.edu</strong>).
+                    Other accounts won't work.
+                </p>
+                <GoogleSignIn onError={onLoginError} />
+                <FormError error={loginError} className="mt-4" />
+            </NoticeCard>
         )
     }
 
     return (
-        <section className="section container page">
-            <div className="account-head">
-                {user.avatarUrl ? (
-                    <img className="avatar avatar-lg" src={user.avatarUrl} alt="" referrerPolicy="no-referrer"/>
-                ) : (
-                    <div className="avatar avatar-lg avatar-initials">{initials(user.name)}</div>
-                )}
+        <section className={page}>
+            <div className="mb-8 flex flex-wrap items-center gap-5">
+                <Avatar name={user.name} avatarUrl={user.avatarUrl} size="lg" />
                 <div>
-                    <h2>{user.name}</h2>
-                    <p className="mono muted">
+                    <h2 className="mb-[0.1rem]">{user.name}</h2>
+                    <p className="m-0 font-mono text-[0.8rem] text-text-soft">
                         {user.email}
                         {user.role === 'BOARD' && ' · board'}
                     </p>
                 </div>
-                <div className="account-actions">
-                    <Link className="btn btn-primary" to="/projects/new">
-                        Create Project
-                    </Link>
-                    <button className="btn btn-ghost" onClick={logout}>
+                <div className="ml-auto flex gap-[0.6rem] max-md:ml-0 max-md:w-full">
+                    <LinkButton to="/projects/new">Create Project</LinkButton>
+                    <Button variant="ghost" onClick={logout}>
                         Sign out
-                    </button>
+                    </Button>
                 </div>
             </div>
 
-            <ProfileForm key={user.id}/>
+            <ProfileForm key={user.id} />
 
-            <div className="section-head">
+            <div className="mb-7 max-w-[680px]">
                 <h3>Your projects</h3>
-                <p className="muted">
-                    Projects you lead or are a teammate on. Pending design docs are visible only to your
-                    team and the board until they're approved.
+                <p className="text-text-soft">
+                    Projects you lead or are a teammate on. Pending design docs are visible only to
+                    your team and the board until they're approved.
                 </p>
             </div>
             {myProjects.length === 0 ? (
-                <p className="muted">
+                <p className="text-text-soft">
                     Nothing yet, <Link to="/projects/new">start your first project</Link>.
                 </p>
             ) : (
-                <div className="grid grid-projects">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-[1.1rem]">
                     {myProjects.map((p) => (
-                        <ProjectCard key={p.id} project={p} showStatus linkToDoc/>
+                        <ProjectCard key={p.id} project={p} showStatus linkToDoc />
                     ))}
                 </div>
             )}

@@ -1,10 +1,10 @@
-import {request} from '../../lib/request'
-import type {LoginResponse, User} from './types'
+import { request } from '../../lib/request'
+import type { LoginResponse, User } from './types'
 
 export const authApi = {
     loginWithGoogle: (credential: string) =>
-        request<LoginResponse>('/api/auth/google', {method: 'POST', body: {credential}}),
-    me: (token: string) => request<User>('/api/me', {token}),
+        request<LoginResponse>('/api/auth/google', { method: 'POST', body: { credential } }),
+    me: (token: string) => request<User>('/api/me', { token }),
     updateProfile: (
         token: string,
         profile: {
@@ -15,5 +15,5 @@ export const authApi = {
             website?: string | null
             company?: string | null
         },
-    ) => request<User>('/api/me', {method: 'POST', body: profile, token}),
+    ) => request<User>('/api/me', { method: 'POST', body: profile, token }),
 }

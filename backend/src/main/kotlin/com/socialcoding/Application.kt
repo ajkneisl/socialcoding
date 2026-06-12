@@ -1,5 +1,15 @@
 package com.socialcoding
 
+import com.socialcoding.auth.AuthException
+import com.socialcoding.auth.GoogleVerifier
+import com.socialcoding.auth.SessionTokens
+import com.socialcoding.auth.authRoutes
+import com.socialcoding.board.boardRoutes
+import com.socialcoding.common.ApiError
+import com.socialcoding.config.AppConfig
+import com.socialcoding.db.DatabaseFactory
+import com.socialcoding.people.peopleRoutes
+import com.socialcoding.projects.projectRoutes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -16,43 +26,22 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import java.io.File
 import kotlinx.serialization.json.Json
 
-/** Loads KEY=VALUE pairs from a local .env file so secrets stay out of source control. */
-private fun loadDotEnv(): Map<String, String> {
-    val file =
-        listOf(File(".env"), File("backend/.env")).firstOrNull { it.isFile } ?: return emptyMap()
-    return file
-        .readLines()
-        .map { it.trim() }
-        .filter { it.isNotEmpty() && !it.startsWith("#") && '=' in it }
-        .associate { line ->
-            val (key, value) = line.split('=', limit = 2)
-            key.trim() to value.trim().removeSurrounding("\"")
-        }
-}
-
 fun Application.rootModule() {
-    val dotenv = loadDotEnv()
-    val env = { key: String, default: String -> System.getenv(key) ?: dotenv[key] ?: default }
+    val config = AppConfig.load()
 
     DatabaseFactory.init(
-        jdbcUrl = env("DATABASE_URL", "jdbc:h2:file:./data/socialcoding;MODE=PostgreSQL"),
-        driver = env("DATABASE_DRIVER", "org.h2.Driver"),
-        user = env("DATABASE_USER", "sa"),
-        password = env("DATABASE_PASSWORD", ""),
+        jdbcUrl = config.databaseUrl,
+        driver = config.databaseDriver,
+        user = config.databaseUser,
+        password = config.databasePassword,
     )
 
-    val google = GoogleVerifier(clientId = env("GOOGLE_CLIENT_ID", ""))
-    val jwtSecret = env("JWT_SECRET", "")
-    require(jwtSecret.isNotBlank()) {
-        "JWT_SECRET is not set — add it to backend/.env (see .env.example) or the environment"
-    }
-    val sessions = SessionTokens(secret = jwtSecret)
-    val boardEmails =
-        env("BOARD_EMAILS", "").split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+    val google = GoogleVerifier(clientId = config.googleClientId)
+    val sessions = SessionTokens(secret = config.jwtSecret)
 
     // encodeDefaults keeps blank design doc answers present in responses instead of omitted.
     install(ContentNegotiation) {
@@ -101,6 +90,11 @@ fun Application.rootModule() {
 
     routing {
         get("/") { call.respondText("Social Coding API") }
-        apiRoutes(google, sessions, boardEmails.toSet())
+        route("/api") {
+            authRoutes(google, sessions, config.boardEmails)
+            peopleRoutes()
+            projectRoutes()
+            boardRoutes()
+        }
     }
 }

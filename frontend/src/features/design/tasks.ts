@@ -1,4 +1,4 @@
-import type {ProjectTask} from '../projects/types'
+import type { ProjectTask } from '../projects/types'
 
 export interface EditableTask {
     name: string
@@ -10,8 +10,8 @@ export interface EditableTask {
 }
 
 export const requiredMilestones = (): EditableTask[] => [
-    {name: 'MVP Presentation', assigneeIds: [], dueDate: '', dependsOn: [], milestone: true},
-    {name: 'Final Presentation', assigneeIds: [], dueDate: '', dependsOn: [], milestone: true},
+    { name: 'MVP Presentation', assigneeIds: [], dueDate: '', dependsOn: [], milestone: true },
+    { name: 'Final Presentation', assigneeIds: [], dueDate: '', dependsOn: [], milestone: true },
 ]
 
 export function tasksToEditable(tasks: ProjectTask[]): EditableTask[] {

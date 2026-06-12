@@ -1,48 +1,15 @@
-package com.socialcoding
+package com.socialcoding.projects
 
+import com.socialcoding.db.Projects
+import com.socialcoding.db.ProjectTasks
 import kotlinx.serialization.Serializable
-
-enum class Role {
-  MEMBER,
-  BOARD,
-}
+import org.jetbrains.exposed.v1.core.ResultRow
 
 enum class ProjectStatus {
   PENDING,
   APPROVED,
   REJECTED,
 }
-
-@Serializable
-data class PersonDto(
-    val id: Long,
-    val name: String,
-    val joinedTerm: String?,
-    val gradYear: Int?,
-    val github: String?,
-    val linkedin: String?,
-    val website: String?,
-    val company: String?,
-    val role: Role,
-    val title: String? = null,
-    val avatarUrl: String? = null,
-)
-
-@Serializable
-data class UserDto(
-    val id: Long,
-    val email: String,
-    val name: String,
-    val role: Role,
-    val joinedTerm: String?,
-    val gradYear: Int?,
-    val github: String?,
-    val linkedin: String?,
-    val website: String?,
-    val company: String?,
-    val title: String? = null,
-    val avatarUrl: String? = null,
-)
 
 @Serializable
 data class ProjectDto(
@@ -119,44 +86,30 @@ data class ProjectDetailDto(
     val canManageTeam: Boolean,
 )
 
-@Serializable
-data class GoogleLoginRequest(val credential: String)
+/** Decodes the comma-separated id columns on ProjectTasks. */
+fun String.toIdList(): List<Long> = split(',').mapNotNull { it.trim().toLongOrNull() }
 
-@Serializable data class LoginResponse(val token: String, val user: UserDto)
+fun ResultRow.toTask() =
+    TaskDto(
+        id = this[ProjectTasks.id],
+        name = this[ProjectTasks.name],
+        assigneeIds = this[ProjectTasks.assigneeIds].toIdList(),
+        dueDate = this[ProjectTasks.dueDate],
+        dependsOn = this[ProjectTasks.dependsOnIds].toIdList(),
+        milestone = this[ProjectTasks.milestone],
+    )
 
-@Serializable
-data class CreateProjectRequest(
-    val title: String,
-    val description: String,
-    val repoUrl: String? = null,
-    val teamLeadId: Long? = null,
-    val memberIds: List<Long> = emptyList(),
-    val designDoc: DesignDocContent = DesignDocContent(),
-    val tasks: List<TaskInput> = emptyList(),
-)
-
-@Serializable
-data class UpdateDesignRequest(
-    val title: String,
-    val description: String,
-    val repoUrl: String? = null,
-    val designDoc: DesignDocContent,
-)
-
-@Serializable data class UpdateMembersRequest(val memberIds: List<Long>, val teamLeadId: Long)
-
-@Serializable data class UpdateTasksRequest(val tasks: List<TaskInput>)
-
-@Serializable
-data class UpdateProfileRequest(
-    val joinedTerm: String? = null,
-    val gradYear: Int? = null,
-    val github: String? = null,
-    val linkedin: String? = null,
-    val website: String? = null,
-    val company: String? = null,
-)
-
-@Serializable data class ReviewRequest(val note: String? = null)
-
-@Serializable data class ApiError(val error: String)
+fun ResultRow.toProject(ownerName: String) =
+    ProjectDto(
+        id = this[Projects.id],
+        title = this[Projects.title],
+        description = this[Projects.description],
+        longDescription = this[Projects.longDescription],
+        active = this[Projects.active],
+        repoUrl = this[Projects.repoUrl],
+        siteUrl = this[Projects.siteUrl],
+        status = this[Projects.status],
+        ownerName = ownerName,
+        submittedAt = this[Projects.submittedAt],
+        reviewNote = this[Projects.reviewNote],
+    )

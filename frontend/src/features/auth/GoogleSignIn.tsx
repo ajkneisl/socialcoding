@@ -1,5 +1,5 @@
-import {useEffect, useRef} from 'react'
-import {GOOGLE_CLIENT_ID, useAuth} from '../auth-context'
+import { useEffect, useRef } from 'react'
+import { GOOGLE_CLIENT_ID, useAuth } from '../../auth-context'
 
 declare global {
     interface Window {
@@ -35,8 +35,8 @@ function loadGsiScript(): Promise<void> {
     })
 }
 
-export default function GoogleSignIn({onError}: { onError: (message: string) => void }) {
-    const {loginWithCredential} = useAuth()
+export default function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
+    const { loginWithCredential } = useAuth()
     const buttonRef = useRef<HTMLDivElement>(null)
     const unconfigured = !GOOGLE_CLIENT_ID
 
@@ -50,7 +50,7 @@ export default function GoogleSignIn({onError}: { onError: (message: string) => 
                 window.google.accounts.id.initialize({
                     client_id: clientId,
                     hd: 'umn.edu',
-                    callback: ({credential}) => {
+                    callback: ({ credential }) => {
                         loginWithCredential(credential).catch((err: Error) => onError(err.message))
                     },
                 })
@@ -69,12 +69,8 @@ export default function GoogleSignIn({onError}: { onError: (message: string) => 
     }, [loginWithCredential, onError])
 
     if (unconfigured) {
-        return (
-            <p className="muted">
-                There's an issue.
-            </p>
-        )
+        return <p className="text-text-soft">There's an issue.</p>
     }
 
-    return <div ref={buttonRef} className="google-signin"/>
+    return <div ref={buttonRef} className="mt-5 flex justify-center" />
 }
