@@ -1,5 +1,7 @@
 *.iml
 .idea
+.env
+data/
 backend/data/
 backend/build/
 backend/.gradle

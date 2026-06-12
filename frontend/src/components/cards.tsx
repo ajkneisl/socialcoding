@@ -1,4 +1,6 @@
-import type { Person, Project, ProjectStatus } from '../api'
+import { Link } from 'react-router-dom'
+import type { Person } from '../features/people/types'
+import type { Project, ProjectStatus } from '../features/projects/types'
 import { initials } from '../util'
 
 export function StatusBadge({ status }: { status: ProjectStatus }) {
@@ -18,11 +20,21 @@ export function ActiveBadge({ active }: { active: boolean }) {
   )
 }
 
-export function ProjectCard({ project, showStatus }: { project: Project; showStatus?: boolean }) {
+export function ProjectCard({
+  project,
+  showStatus,
+  linkToDoc,
+}: {
+  project: Project
+  showStatus?: boolean
+  linkToDoc?: boolean
+}) {
   return (
     <article className="card project-card">
       <div className="card-top">
-        <h3>{project.title}</h3>
+        <h3>
+          {linkToDoc ? <Link to={`/projects/${project.id}`}>{project.title}</Link> : project.title}
+        </h3>
         {showStatus ? <StatusBadge status={project.status} /> : (
           <ActiveBadge active={project.active} />
         )}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { api, type User } from './api'
+import { authApi } from './features/auth/api'
+import type { User } from './features/auth/types'
 import { AuthContext, TOKEN_KEY } from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -10,7 +11,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!token) return
     let cancelled = false
-    api
+    authApi
       .me(token)
       .then((u) => {
         if (!cancelled) setUser(u)
@@ -31,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token])
 
   const loginWithCredential = useCallback(async (credential: string) => {
-    const res = await api.loginWithGoogle(credential)
+    const res = await authApi.loginWithGoogle(credential)
     localStorage.setItem(TOKEN_KEY, res.token)
     setUser(res.user)
     setToken(res.token)
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     if (!token) return
-    setUser(await api.me(token))
+    setUser(await authApi.me(token))
   }, [token])
 
   const logout = useCallback(() => {

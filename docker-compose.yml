@@ -1,0 +1,47 @@
+services:
+    db:
+        image: postgres:17-alpine
+        environment:
+            POSTGRES_DB: socialcoding
+            POSTGRES_USER: socialcoding
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-socialcoding}
+        ports:
+            - '5432:5432'
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: [ 'CMD-SHELL', 'pg_isready -U socialcoding -d socialcoding' ]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+    backend:
+        image: backend:${VERSION:-latest}
+        environment:
+            DATABASE_URL: jdbc:postgresql://db:5432/socialcoding
+            DATABASE_DRIVER: org.postgresql.Driver
+            DATABASE_USER: socialcoding
+            DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-socialcoding}
+            JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+            BOARD_EMAILS: ${BOARD_EMAILS:-}
+        depends_on:
+            db:
+                condition: service_healthy
+
+    frontend:
+        image: frontend:${VERSION:-latest}
+        ports:
+            - '${WEB_PORT:-8090}:80'
+        depends_on:
+            - backend
+
+    cloudflared:
+        image: cloudflare/cloudflared:latest
+        command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+        restart: unless-stopped
+        depends_on:
+            - frontend
+
+volumes:
+    pgdata:

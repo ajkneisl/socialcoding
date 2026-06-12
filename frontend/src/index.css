@@ -330,17 +330,18 @@ code {
 
 .timeline {
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
   margin: 2.25rem 0 0;
   padding: 0;
   counter-reset: phase;
+  max-width: 680px;
 }
 
 .timeline li {
   position: relative;
-  padding-top: 2.1rem;
+  padding-left: 2.4rem;
   counter-increment: phase;
 }
 
@@ -366,10 +367,10 @@ code {
 .timeline li::after {
   content: '';
   position: absolute;
-  top: 0.75rem;
-  left: 2rem;
-  right: -1.25rem;
-  height: 2px;
+  top: 1.8rem;
+  left: 0.75rem;
+  bottom: -1.75rem;
+  width: 2px;
   background: var(--line);
 }
 
@@ -584,18 +585,39 @@ code {
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--gold);
-  background: linear-gradient(90deg, var(--crimson), transparent);
-  border-radius: 4px;
-  padding: 0.15rem 0.5rem;
-  margin: 0.3rem 0 0.35rem !important;
-  display: inline-block;
 }
 
-.board-grid {
-  margin-top: 1.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+/* ---------- meet the board ---------- */
+
+.board-list {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.4rem 2rem;
+}
+
+.board-person {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.board-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.board-title {
+  margin: 0.1rem 0 0;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .person-info .person-links {
@@ -1018,6 +1040,348 @@ textarea {
   margin: 0.1rem 0 0;
 }
 
+/* ---------- design doc ---------- */
+
+.steps {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.4rem 1rem 0.4rem 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.step:hover {
+  border-color: var(--text-faint);
+  color: var(--text);
+}
+
+.step-active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.step-active .step-num {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #16130a;
+}
+
+.step-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.designdoc-form h4 {
+  margin: 0.75rem 0 0.15rem;
+}
+
+/* ---------- team picker ---------- */
+
+.team-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.autocomplete {
+  position: relative;
+  max-width: 440px;
+}
+
+.autocomplete input {
+  width: 100%;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+.autocomplete-list button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.autocomplete-list button:hover {
+  background: var(--bg-raised);
+}
+
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.member-name {
+  font-weight: 500;
+}
+
+.avatar-sm {
+  width: 30px;
+  height: 30px;
+  font-size: 0.72rem;
+}
+
+.link-btn {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: var(--gold);
+  text-decoration: underline;
+}
+
+/* ---------- deliverables editor ---------- */
+
+.task-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.task-editor > .btn {
+  align-self: start;
+}
+
+.task-edit-row {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.task-edit-row.milestone {
+  border-left: 3px solid var(--gold);
+}
+
+.task-edit-row .form-row {
+  align-items: end;
+}
+
+.task-date {
+  flex: 0 0 170px;
+}
+
+.task-remove {
+  flex: 0 0 auto;
+}
+
+.chip-select {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.chip-select .chip {
+  padding: 0.2rem 0.7rem;
+}
+
+/* ---------- doc page ---------- */
+
+.doc-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.doc-title h2 {
+  margin-bottom: 0;
+}
+
+.doc-section {
+  margin-bottom: 2.5rem;
+}
+
+.doc-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.doc-section-head h3 {
+  margin: 0;
+}
+
+.board-review {
+  margin-bottom: 2.5rem;
+}
+
+.qa-section {
+  margin-bottom: 1.75rem;
+}
+
+.qa-section h4 {
+  color: var(--gold);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+}
+
+.qa {
+  margin-bottom: 0.9rem;
+}
+
+.qa-q {
+  font-weight: 600;
+  margin: 0 0 0.15rem;
+}
+
+.qa-a {
+  color: var(--text-soft);
+  margin: 0;
+  max-width: 75ch;
+  white-space: pre-wrap;
+}
+
+/* ---------- project timeline ---------- */
+
+.doc-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.doc-timeline::before {
+  content: '';
+  position: absolute;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  left: 7px;
+  width: 2px;
+  background: var(--line);
+}
+
+.tl-item {
+  position: relative;
+  padding: 0 0 1.25rem 2rem;
+}
+
+.tl-item:last-child {
+  padding-bottom: 0;
+}
+
+.tl-dot {
+  position: absolute;
+  top: 0.35rem;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--text-faint);
+}
+
+.tl-past .tl-dot {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.tl-past .tl-body {
+  opacity: 0.65;
+}
+
+.tl-milestone .tl-dot {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.tl-today .tl-dot {
+  background: var(--crimson);
+  border-color: var(--crimson);
+}
+
+.tl-today .tl-body {
+  color: var(--crimson-bright);
+  font-weight: 600;
+  padding-top: 0.1rem;
+}
+
+.tl-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.tl-meta {
+  margin: 0.15rem 0 0;
+}
+
 /* ---------- cta ---------- */
 
 .cta {
@@ -1137,25 +1501,6 @@ textarea {
     border-top: 1px solid var(--line);
     padding-left: 0;
     padding-top: 1.25rem;
-  }
-
-  .timeline {
-    grid-template-columns: 1fr;
-    gap: 1.75rem;
-  }
-
-  .timeline li {
-    padding-top: 0;
-    padding-left: 2.4rem;
-  }
-
-  .timeline li::after {
-    top: 1.8rem;
-    left: 0.75rem;
-    right: auto;
-    bottom: -1.75rem;
-    width: 2px;
-    height: auto;
   }
 
   .footer-grid {

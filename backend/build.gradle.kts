@@ -12,6 +12,12 @@ application { mainClass = "com.socialcoding.MainKt" }
 
 kotlin { jvmToolchain(21) }
 
+tasks.test {
+  // Keep tests out of the local file database and independent of the gitignored .env.
+  environment("DATABASE_URL", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
+  environment("JWT_SECRET", "dev-only-secret-change-me")
+}
+
 dependencies {
   implementation(ktorLibs.serialization.kotlinx.json)
   implementation(ktorLibs.client.cio)
