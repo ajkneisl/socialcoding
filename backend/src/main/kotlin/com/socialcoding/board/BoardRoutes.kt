@@ -1,14 +1,13 @@
 package com.socialcoding.board
 
 import com.socialcoding.auth.currentRole
-import com.socialcoding.auth.currentUserId
-import com.socialcoding.common.ApiError
-import com.socialcoding.db.Projects
-import com.socialcoding.db.Users
-import com.socialcoding.people.Role
+import com.socialcoding.auth.currentUserID
+import com.socialcoding.common.InvalidAuthorization
+import com.socialcoding.common.NotFound
 import com.socialcoding.projects.ProjectStatus
-import com.socialcoding.projects.projectsWithOwners
-import com.socialcoding.projects.toProject
+import com.socialcoding.projects.Projects
+import com.socialcoding.db.Role
+import com.socialcoding.projects.pendingProjects
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
@@ -22,66 +21,63 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 
-@Serializable data class ReviewRequest(val note: String? = null)
-
 /** Board-only review queue and project activation. */
 fun Route.boardRoutes() {
     authenticate("session") {
         route("/board") {
+            // GET /api/board/projects
+            // view all pending projects
             get("/projects") {
-                if (currentRole() != Role.BOARD) {
-                    call.respond(HttpStatusCode.Forbidden, ApiError("Board access required"))
-                    return@get
-                }
-                val pending = transaction {
-                    projectsWithOwners()
-                        .where { Projects.status eq ProjectStatus.PENDING }
-                        .orderBy(Projects.submittedAt)
-                        .map { it.toProject(it[Users.name]) }
-                }
-                call.respond(pending)
+                if (currentRole() != Role.BOARD) throw InvalidAuthorization()
+
+                call.respond(pendingProjects())
             }
 
+            /**
+             * A request to finalize a review.
+             *
+             * @param note An optional note for the project.
+             */
+            @Serializable data class ReviewRequest(val note: String? = null)
+            val decisions = setOf("approve", "reject", "activate", "deactivate")
+
+            // POST /api/board/projects/{id}/{decision}
+            // finalize a decision on a project.
             post("/projects/{id}/{decision}") {
-                if (currentRole() != Role.BOARD) {
-                    call.respond(HttpStatusCode.Forbidden, ApiError("Board access required"))
-                    return@post
-                }
-                val projectId = call.parameters["id"]?.toLongOrNull()
-                val decision = call.parameters["decision"]
-                if (
-                    projectId == null ||
-                        decision !in setOf("approve", "reject", "activate", "deactivate")
-                ) {
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        ApiError("Unknown project or decision"),
-                    )
-                    return@post
-                }
+                if (currentRole() != Role.BOARD) throw InvalidAuthorization()
+
+                val projectID = call.parameters["id"]?.toLongOrNull()
+                val decision = call.parameters["decision"]?.lowercase()
+
+                if (projectID == null || decision !in decisions) throw NotFound("project")
+
                 val note = runCatching { call.receive<ReviewRequest>().note }.getOrNull()
-                val reviewerId = currentUserId()
+                val reviewerID = currentUserID()
+
                 val updated = transaction {
-                    Projects.update({ Projects.id eq projectId }) {
+                    Projects.update({ Projects.id eq projectID }) {
                         when (decision) {
                             "approve" -> {
                                 it[status] = ProjectStatus.APPROVED
-                                it[reviewedBy] = reviewerId
+                                it[reviewedBy] = reviewerID
                                 it[reviewNote] = note
                             }
+
                             "reject" -> {
                                 it[status] = ProjectStatus.REJECTED
-                                it[reviewedBy] = reviewerId
+                                it[reviewedBy] = reviewerID
                                 it[reviewNote] = note
                             }
+
                             "activate" -> it[active] = true
                             "deactivate" -> it[active] = false
                         }
                     }
                 }
-                if (updated == 0)
-                    call.respond(HttpStatusCode.NotFound, ApiError("Project not found"))
-                else call.respond(HttpStatusCode.OK)
+
+                if (updated == 0) throw NotFound("project")
+
+                call.respond(HttpStatusCode.OK)
             }
         }
     }

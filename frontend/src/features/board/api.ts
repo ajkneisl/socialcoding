@@ -1,8 +1,9 @@
 import { request } from '../../lib/request'
-import type { Project } from '../projects/types'
+import type { PendingProject } from '../projects/types'
 
 export const boardApi = {
-    pendingProjects: (token: string) => request<Project[]>('/api/board/projects', { token }),
+    pendingProjects: (token: string) =>
+        request<PendingProject[]>('/api/board/projects', { token }),
     reviewProject: (
         token: string,
         id: number,

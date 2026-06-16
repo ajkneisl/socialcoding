@@ -49,7 +49,7 @@ function ProfileForm() {
         <form className={`${card} mb-8 flex flex-col gap-[0.9rem]`} onSubmit={submit}>
             <h3 className="m-0">Your profile</h3>
             <p className="m-0 text-text-soft">This is what shows on the People page.</p>
-            <div className="flex flex-wrap gap-[0.9rem]">
+            <div className="flex flex-wrap gap-[0.9rem] [&>label]:min-w-[11rem]">
                 <label>
                     Joined
                     <input
@@ -71,7 +71,7 @@ function ProfileForm() {
                     />
                 </label>
             </div>
-            <div className="flex flex-wrap gap-[0.9rem]">
+            <div className="flex flex-wrap gap-[0.9rem] [&>label]:min-w-[11rem]">
                 <label>
                     GitHub username
                     <input
@@ -90,7 +90,7 @@ function ProfileForm() {
                     />
                 </label>
             </div>
-            <div className="flex flex-wrap gap-[0.9rem]">
+            <div className="flex flex-wrap gap-[0.9rem] [&>label]:min-w-[11rem]">
                 <label>
                     Portfolio website
                     <input

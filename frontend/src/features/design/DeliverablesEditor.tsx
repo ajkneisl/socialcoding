@@ -37,7 +37,7 @@ export function DeliverablesEditor({
                     }`}
                 >
                     <div className="flex flex-wrap items-end gap-[0.9rem]">
-                        <label>
+                        <label className="min-w-[11rem]">
                             Task
                             {task.milestone && (
                                 <span className="text-text-soft"> (required milestone)</span>

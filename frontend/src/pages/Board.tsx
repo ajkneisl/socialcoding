@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { boardApi } from '../features/board/api'
 import { projectsApi } from '../features/projects/api'
-import type { Project } from '../features/projects/types'
+import type { PendingProject, Project } from '../features/projects/types'
 import { useAuth } from '../auth-context'
+import { Avatar } from '../components/Avatar'
+import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { FormError } from '../components/FormError'
 import { PageMessage } from '../components/PageMessage'
@@ -12,17 +14,20 @@ import { page } from '../components/styles'
 
 const row = 'border-b border-line px-1 py-[1.4rem] hover:bg-bg-raised'
 
-function PendingProject({
-    project,
+function PendingProjectCard({
+    pending,
     onReviewed,
 }: {
-    project: Project
+    pending: PendingProject
     onReviewed: (id: number) => void
 }) {
     const { token } = useAuth()
     const [note, setNote] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [busy, setBusy] = useState(false)
+
+    const { project, members, teamLeadID } = pending
+    const lead = members.find((m) => m.id === teamLeadID)
 
     async function review(decision: 'approve' | 'reject') {
         if (!token) return
@@ -42,10 +47,20 @@ function PendingProject({
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="m-0">{project.title}</h3>
                 <span className="font-mono text-[0.8rem] text-text-soft">
-                    {new Date(project.submittedAt).toLocaleDateString()} · {project.ownerName}
+                    {new Date(project.submittedAt).toLocaleDateString()}
+                    {lead && <> · led by {lead.name}</>}
                 </span>
             </div>
             <p className="mb-2 mt-[0.35rem] max-w-[75ch] text-text-soft">{project.description}</p>
+            <ul className="my-3 flex flex-wrap gap-x-4 gap-y-2">
+                {members.map((m) => (
+                    <li key={m.id} className="flex items-center gap-[0.5rem]">
+                        <Avatar name={m.name} avatarUrl={m.avatarUrl} size="sm" />
+                        <span className="text-[0.9rem] font-medium">{m.name}</span>
+                        {m.id === teamLeadID && <Badge variant="board">team lead</Badge>}
+                    </li>
+                ))}
+            </ul>
             <p className="mb-2 mt-[0.35rem] font-mono text-[0.8rem]">
                 <Link to={`/projects/${project.id}`}>view full design doc →</Link>
                 {project.repoUrl && (
@@ -113,7 +128,7 @@ function ApprovedProjectRow({ project }: { project: Project }) {
 
 export default function Board() {
     const { user, token, loading } = useAuth()
-    const [pending, setPending] = useState<Project[]>([])
+    const [pending, setPending] = useState<PendingProject[]>([])
     const [approved, setApproved] = useState<Project[]>([])
     const [error, setError] = useState<string | null>(null)
 
@@ -131,7 +146,7 @@ export default function Board() {
     }, [token, user])
 
     const onReviewed = useCallback(
-        (id: number) => setPending((prev) => prev.filter((p) => p.id !== id)),
+        (id: number) => setPending((prev) => prev.filter((p) => p.project.id !== id)),
         [],
     )
 
@@ -159,7 +174,11 @@ export default function Board() {
             ) : (
                 <div className="border-t border-line">
                     {pending.map((p) => (
-                        <PendingProject key={p.id} project={p} onReviewed={onReviewed} />
+                        <PendingProjectCard
+                            key={p.project.id}
+                            pending={p}
+                            onReviewed={onReviewed}
+                        />
                     ))}
                 </div>
             )}

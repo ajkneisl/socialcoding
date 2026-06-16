@@ -1,5 +1,6 @@
 package com.socialcoding.people
 
+import com.socialcoding.db.Role
 import com.socialcoding.db.Users
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -11,7 +12,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 /** Public profile shown on the People page; deliberately omits the email. */
 @Serializable
-data class PersonDto(
+data class Person(
     val id: Long,
     val name: String,
     val joinedTerm: String?,
@@ -26,7 +27,7 @@ data class PersonDto(
 )
 
 fun ResultRow.toPerson() =
-    PersonDto(
+    Person(
         id = this[Users.id],
         name = this[Users.name],
         joinedTerm = this[Users.joinedTerm],

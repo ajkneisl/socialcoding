@@ -1,18 +1,18 @@
-import { useState } from 'react'
-import type { Person } from '../people/types'
-import { Avatar } from '../../components/Avatar'
-import { Badge } from '../../components/Badge'
+import {useState} from 'react'
+import type {Person} from '../people/types'
+import {Avatar} from '../../components/Avatar'
+import {Badge} from '../../components/Badge'
 
 const linkBtn =
     'cursor-pointer border-0 bg-transparent p-0 font-mono text-[0.8rem] text-text-faint hover:text-gold hover:underline'
 
 export function TeamPicker({
-    people,
-    memberIds,
-    leadId,
-    lockedIds = [],
-    onChange,
-}: {
+                               people,
+                               memberIds,
+                               leadId,
+                               lockedIds = [],
+                               onChange,
+                           }: {
     people: Person[]
     memberIds: number[]
     leadId: number
@@ -25,8 +25,8 @@ export function TeamPicker({
     const q = query.trim().toLowerCase()
     const matches = q
         ? people
-              .filter((p) => !memberIds.includes(p.id) && p.name.toLowerCase().includes(q))
-              .slice(0, 6)
+            .filter((p) => !memberIds.includes(p.id) && p.name.toLowerCase().includes(q))
+            .slice(0, 6)
         : []
 
     return (
@@ -51,7 +51,7 @@ export function TeamPicker({
                                         setQuery('')
                                     }}
                                 >
-                                    <Avatar name={p.name} avatarUrl={p.avatarUrl} size="sm" />
+                                    <Avatar name={p.name} avatarUrl={p.avatarUrl} size="sm"/>
                                     <span>{p.name}</span>
                                     {p.company && (
                                         <span className="font-mono text-[0.8rem] text-text-soft">
@@ -64,41 +64,48 @@ export function TeamPicker({
                     </ul>
                 )}
             </div>
-            <ul className="flex flex-col gap-[0.45rem]">
+
+            <ul className="flex flex-col gap-[0.65rem] py-3">
                 {memberIds.map((id) => {
                     const person = byId.get(id)
                     if (!person) return null
                     const isLead = id === leadId
                     return (
-                        <li key={id} className="flex items-center gap-[0.65rem]">
-                            <Avatar name={person.name} avatarUrl={person.avatarUrl} size="sm" />
-                            <span className="font-medium">{person.name}</span>
-                            {isLead ? (
-                                <Badge variant="board">team lead</Badge>
-                            ) : (
-                                <button
-                                    type="button"
-                                    className={linkBtn}
-                                    onClick={() => onChange(memberIds, id)}
-                                >
-                                    make lead
-                                </button>
-                            )}
-                            {!isLead && !lockedIds.includes(id) && (
-                                <button
-                                    type="button"
-                                    className={linkBtn}
-                                    aria-label={`Remove ${person.name}`}
-                                    onClick={() =>
-                                        onChange(
-                                            memberIds.filter((m) => m !== id),
-                                            leadId,
-                                        )
-                                    }
-                                >
-                                    remove
-                                </button>
-                            )}
+                        <li key={id} className="flex justify-between items-center py-[0.15rem]">
+                            <div className="flex flex-row gap-[0.65rem]">
+                                <Avatar name={person.name} avatarUrl={person.avatarUrl} size="sm"/>
+                                <span className="font-medium">{person.name}</span>
+                            </div>
+
+                            <div className="flex flex-row gap-2">
+                                {isLead ? (
+                                    <Badge variant="board">team lead</Badge>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className={linkBtn}
+                                        onClick={() => onChange(memberIds, id)}
+                                    >
+                                        promote
+                                    </button>
+                                )}
+
+                                {!isLead && !lockedIds.includes(id) && (
+                                    <button
+                                        type="button"
+                                        className={linkBtn}
+                                        aria-label={`Remove ${person.name}`}
+                                        onClick={() =>
+                                            onChange(
+                                                memberIds.filter((m) => m !== id),
+                                                leadId,
+                                            )
+                                        }
+                                    >
+                                        remove
+                                    </button>
+                                )}
+                            </div>
                         </li>
                     )
                 })}

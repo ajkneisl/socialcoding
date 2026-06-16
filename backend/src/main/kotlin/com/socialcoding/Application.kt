@@ -1,13 +1,13 @@
 package com.socialcoding
 
-import com.socialcoding.auth.AuthException
-import com.socialcoding.auth.GoogleVerifier
-import com.socialcoding.auth.SessionTokens
+import com.socialcoding.auth.Auth
 import com.socialcoding.auth.authRoutes
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.ApiError
-import com.socialcoding.config.AppConfig
-import com.socialcoding.db.DatabaseFactory
+import com.socialcoding.db.ProjectMembers
+import com.socialcoding.projects.ProjectTasks
+import com.socialcoding.projects.Projects
+import com.socialcoding.db.Users
 import com.socialcoding.people.peopleRoutes
 import com.socialcoding.projects.projectRoutes
 import io.ktor.http.HttpHeaders
@@ -20,30 +20,46 @@ import io.ktor.server.application.log
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
-fun Application.rootModule() {
-    val config = AppConfig.load()
+/** Main entry, finds the port too. */
+fun main() {
+    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
 
-    DatabaseFactory.init(
-        jdbcUrl = config.databaseUrl,
-        driver = config.databaseDriver,
-        user = config.databaseUser,
-        password = config.databasePassword,
+    initDb()
+
+    embeddedServer(Netty, port = port, host = "0.0.0.0") { rootModule() }.start(wait = true)
+}
+
+/** Initialize the database and create tables if necessary. */
+fun initDb() {
+    Database.connect(
+        Environment.getVariable("DB_URL"),
+        driver =
+            when {
+                Environment.isProduction -> "org.postgresql.Driver"
+                else -> "org.h2.Driver"
+            },
+        user = Environment.getVariable("DB_USER"),
+        password = Environment.getVariable("DB_PASS"),
     )
 
-    val google = GoogleVerifier(clientId = config.googleClientId)
-    val sessions = SessionTokens(secret = config.jwtSecret)
+    transaction { SchemaUtils.create(Users, Projects, ProjectMembers, ProjectTasks) }
+}
 
-    // encodeDefaults keeps blank design doc answers present in responses instead of omitted.
+/** Ktor root module. */
+fun Application.rootModule() {
     install(ContentNegotiation) {
         json(
             Json {
@@ -66,9 +82,6 @@ fun Application.rootModule() {
     }
 
     install(StatusPages) {
-        exception<AuthException> { call, cause ->
-            call.respond(HttpStatusCode.Unauthorized, ApiError(cause.message ?: "Unauthorized"))
-        }
         exception<Throwable> { call, cause ->
             call.application.log.error("Unhandled error", cause)
             call.respond(HttpStatusCode.InternalServerError, ApiError("Something went wrong"))
@@ -78,7 +91,7 @@ fun Application.rootModule() {
     install(Authentication) {
         jwt("session") {
             realm = "socialcoding"
-            verifier(sessions.verifier)
+            verifier(Auth.verifier)
             validate { credential ->
                 if (credential.payload.subject != null) JWTPrincipal(credential.payload) else null
             }
@@ -89,9 +102,8 @@ fun Application.rootModule() {
     }
 
     routing {
-        get("/") { call.respondText("Social Coding API") }
         route("/api") {
-            authRoutes(google, sessions, config.boardEmails)
+            authRoutes()
             peopleRoutes()
             projectRoutes()
             boardRoutes()

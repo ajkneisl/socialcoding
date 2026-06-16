@@ -50,6 +50,13 @@ export interface ProjectDetail {
     canManageTeam: boolean
 }
 
+/** A pending project paired with its team, for the board review queue. */
+export interface PendingProject {
+    project: Project
+    teamLeadID: number
+    members: ProjectMember[]
+}
+
 export interface CreateProjectRequest {
     title: string
     description: string

@@ -2,7 +2,6 @@ package com.socialcoding
 
 import com.socialcoding.auth.SessionTokens
 import com.socialcoding.db.Users
-import com.socialcoding.people.Role
 import com.socialcoding.projects.ProjectDetailDto
 import com.socialcoding.projects.ProjectStatus
 import io.ktor.client.request.bearerAuth
