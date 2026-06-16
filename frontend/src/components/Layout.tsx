@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { AnchorButton, LinkButton } from './Button'
@@ -23,39 +24,86 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 
 export default function Layout() {
     const { user } = useAuth()
+    const [menuOpen, setMenuOpen] = useState(false)
+
+    const navLinks = (
+        <>
+            <NavLink to="/projects" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+                Projects
+            </NavLink>
+            <NavLink to="/people" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+                People
+            </NavLink>
+            {user?.role === 'BOARD' && (
+                <NavLink to="/board" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+                    Board
+                </NavLink>
+            )}
+        </>
+    )
 
     return (
         <div className="flex min-h-screen flex-col">
             <header className="sticky top-0 z-50 border-b border-line-soft bg-bg/82 backdrop-blur-[12px]">
                 <nav className={`${container} flex h-[68px] items-center gap-8 max-md:gap-4`}>
                     <Logo />
-                    <div className="flex flex-1 gap-6 max-md:gap-4">
-                        <NavLink to="/projects" className={navLinkClass}>
-                            Projects
-                        </NavLink>
-                        <NavLink to="/people" className={navLinkClass}>
-                            People
-                        </NavLink>
-                        {user?.role === 'BOARD' && (
-                            <NavLink to="/board" className={navLinkClass}>
-                                Board
-                            </NavLink>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-[0.6rem]">
+                    <div className="flex flex-1 gap-6 max-md:hidden">{navLinks}</div>
+                    <div className="flex items-center gap-[0.6rem] max-md:flex-1 max-md:justify-end">
                         <AnchorButton
                             variant="ghost"
                             href="https://discord.gg/social-coding"
                             target="_blank"
                             rel="noreferrer"
+                            className="max-md:hidden"
                         >
                             Discord
                         </AnchorButton>
                         <LinkButton to="/account">
                             {user ? user.name.split(' ')[0] : 'Sign in'}
                         </LinkButton>
+                        <button
+                            type="button"
+                            className="hidden cursor-pointer items-center justify-center rounded-lg border border-line p-2 text-text hover:bg-bg-raised max-md:inline-flex"
+                            aria-label="Toggle navigation menu"
+                            aria-expanded={menuOpen}
+                            onClick={() => setMenuOpen((open) => !open)}
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                width="22"
+                                height="22"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                aria-hidden="true"
+                            >
+                                {menuOpen ? (
+                                    <path d="M6 6l12 12M18 6L6 18" />
+                                ) : (
+                                    <path d="M4 7h16M4 12h16M4 17h16" />
+                                )}
+                            </svg>
+                        </button>
                     </div>
                 </nav>
+                {menuOpen && (
+                    <div className="hidden border-t border-line-soft bg-bg max-md:block">
+                        <div className={`${container} flex flex-col gap-1 py-3`}>
+                            {navLinks}
+                            <AnchorButton
+                                variant="ghost"
+                                href="https://discord.gg/social-coding"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 self-start"
+                                onClick={() => setMenuOpen(false)}
+                            >
+                                Discord
+                            </AnchorButton>
+                        </div>
+                    </div>
+                )}
             </header>
 
             <main className="flex-1">
