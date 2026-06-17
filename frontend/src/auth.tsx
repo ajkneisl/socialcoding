@@ -1,53 +1,50 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { authApi } from './features/auth/api'
-import type { User } from './features/auth/types'
-import { AuthContext, TOKEN_KEY } from './auth-context'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { getCurrentUser, loginWithGoogle } from './features/auth/api'
+import { AuthContext, TOKEN_KEY, meKey } from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY))
-    const [user, setUser] = useState<User | null>(null)
-    const [loading, setLoading] = useState(!!token)
+    const queryClient = useQueryClient()
 
-    useEffect(() => {
-        if (!token) return
-        let cancelled = false
-        authApi
-            .me(token)
-            .then((u) => {
-                if (!cancelled) setUser(u)
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    localStorage.removeItem(TOKEN_KEY)
-                    setToken(null)
-                    setUser(null)
-                }
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false)
-            })
-        return () => {
-            cancelled = true
-        }
-    }, [token])
+    const meQuery = useQuery({
+        queryKey: meKey,
+        // A token the server rejects is no longer useful — drop it on failure.
+        queryFn: async () => {
+            try {
+                return await getCurrentUser(token!)
+            } catch (err) {
+                localStorage.removeItem(TOKEN_KEY)
+                setToken(null)
+                throw err
+            }
+        },
+        enabled: !!token,
+        staleTime: 5 * 60_000,
+    })
 
-    const loginWithCredential = useCallback(async (credential: string) => {
-        const res = await authApi.loginWithGoogle(credential)
-        localStorage.setItem(TOKEN_KEY, res.token)
-        setUser(res.user)
-        setToken(res.token)
-    }, [])
+    const loginWithCredential = useCallback(
+        async (credential: string) => {
+            const res = await loginWithGoogle(credential)
+            localStorage.setItem(TOKEN_KEY, res.token)
+            setToken(res.token)
+            queryClient.setQueryData(meKey, res.user)
+        },
+        [queryClient],
+    )
 
     const refreshUser = useCallback(async () => {
-        if (!token) return
-        setUser(await authApi.me(token))
-    }, [token])
+        await queryClient.invalidateQueries({ queryKey: meKey })
+    }, [queryClient])
 
     const logout = useCallback(() => {
         localStorage.removeItem(TOKEN_KEY)
         setToken(null)
-        setUser(null)
-    }, [])
+        queryClient.removeQueries({ queryKey: meKey })
+    }, [queryClient])
+
+    const user = meQuery.data ?? null
+    const loading = meQuery.isLoading
 
     const value = useMemo(
         () => ({ user, token, loading, loginWithCredential, refreshUser, logout }),

@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { boardApi } from '../features/board/api'
-import { peopleApi } from '../features/people/api'
+import { useReviewProject } from '../features/board/queries'
+import { usePeople } from '../features/people/queries'
 import type { Person } from '../features/people/types'
-import { projectsApi } from '../features/projects/api'
+import {
+    useProjectDetail,
+    useUpdateProjectDesign,
+    useUpdateProjectMembers,
+    useUpdateProjectTasks,
+} from '../features/projects/queries'
 import type { ProjectDetail as Detail } from '../features/projects/types'
 import { ReviewNote, StatusBadge } from '../features/projects/StatusBadge'
 import {
@@ -29,24 +34,16 @@ import { card, page } from '../components/styles'
 
 const sectionHead = 'mb-3 flex items-center justify-between gap-4'
 
-function BoardReview({ detail, onReviewed }: { detail: Detail; onReviewed: () => void }) {
-    const { token } = useAuth()
+function BoardReview({ detail }: { detail: Detail }) {
+    const reviewProject = useReviewProject()
     const [note, setNote] = useState('')
-    const [busy, setBusy] = useState(false)
-    const [error, setError] = useState<string | null>(null)
 
-    async function review(decision: 'approve' | 'reject') {
-        if (!token) return
-        setBusy(true)
-        setError(null)
-        try {
-            await boardApi.reviewProject(token, detail.project.id, decision, note || undefined)
-            onReviewed()
-        } catch (err) {
-            setError((err as Error).message)
-            setBusy(false)
-        }
+    function review(decision: 'approve' | 'reject') {
+        reviewProject.mutate({ id: detail.project.id, decision, note: note || undefined })
     }
+
+    const busy = reviewProject.isPending
+    const error = reviewProject.error?.message ?? null
 
     return (
         <div className={`${card} mb-10 flex flex-col gap-[0.9rem]`}>
@@ -74,46 +71,30 @@ function BoardReview({ detail, onReviewed }: { detail: Detail; onReviewed: () =>
     )
 }
 
-function TeamSection({
-    detail,
-    people,
-    onUpdated,
-}: {
-    detail: Detail
-    people: Person[]
-    onUpdated: (d: Detail) => void
-}) {
-    const { token } = useAuth()
+function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
+    const updateMembers = useUpdateProjectMembers(detail.project.id)
     const [editing, setEditing] = useState(false)
     const [memberIds, setMemberIds] = useState<number[]>([])
     const [leadId, setLeadId] = useState(detail.teamLeadId)
-    const [error, setError] = useState<string | null>(null)
-    const [busy, setBusy] = useState(false)
 
     function startEditing() {
         setMemberIds(detail.members.map((m) => m.id))
         setLeadId(detail.teamLeadId)
-        setError(null)
+        updateMembers.reset()
         setEditing(true)
     }
 
     async function save() {
-        if (!token) return
-        setBusy(true)
-        setError(null)
         try {
-            const updated = await projectsApi.updateMembers(token, detail.project.id, {
-                memberIds,
-                teamLeadId: leadId,
-            })
-            if (updated) onUpdated(updated)
+            await updateMembers.mutateAsync({ memberIds, teamLeadId: leadId })
             setEditing(false)
-        } catch (err) {
-            setError((err as Error).message)
-        } finally {
-            setBusy(false)
+        } catch {
+            // error surfaced via updateMembers.error below
         }
     }
+
+    const busy = updateMembers.isPending
+    const error = updateMembers.error?.message ?? null
 
     return (
         <div className="mb-10">
@@ -166,50 +147,39 @@ function TeamSection({
     )
 }
 
-function DesignDocSections({
-    detail,
-    onUpdated,
-}: {
-    detail: Detail
-    onUpdated: (d: Detail) => void
-}) {
-    const { token } = useAuth()
+function DesignDocSections({ detail }: { detail: Detail }) {
+    const updateDesign = useUpdateProjectDesign(detail.project.id)
     const [editing, setEditing] = useState(false)
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [repoUrl, setRepoUrl] = useState('')
     const [doc, setDoc] = useState<DesignDoc>(detail.designDoc)
-    const [error, setError] = useState<string | null>(null)
-    const [busy, setBusy] = useState(false)
 
     function startEditing() {
         setTitle(detail.project.title)
         setDescription(detail.project.description)
         setRepoUrl(detail.project.repoUrl ?? '')
         setDoc(detail.designDoc)
-        setError(null)
+        updateDesign.reset()
         setEditing(true)
     }
 
     async function save() {
-        if (!token) return
-        setBusy(true)
-        setError(null)
         try {
-            const updated = await projectsApi.updateDesign(token, detail.project.id, {
+            await updateDesign.mutateAsync({
                 title: title.trim(),
                 description: description.trim(),
                 repoUrl: repoUrl.trim() || undefined,
                 designDoc: doc,
             })
-            onUpdated(updated)
             setEditing(false)
-        } catch (err) {
-            setError((err as Error).message)
-        } finally {
-            setBusy(false)
+        } catch {
+            // error surfaced via updateDesign.error below
         }
     }
+
+    const busy = updateDesign.isPending
+    const error = updateDesign.error?.message ?? null
 
     return (
         <div className="mb-10">
@@ -288,45 +258,32 @@ function DesignDocSections({
     )
 }
 
-function DeliverablesSection({
-    detail,
-    onUpdated,
-}: {
-    detail: Detail
-    onUpdated: (d: Detail) => void
-}) {
-    const { token } = useAuth()
+function DeliverablesSection({ detail }: { detail: Detail }) {
+    const updateTasks = useUpdateProjectTasks(detail.project.id)
     const [editing, setEditing] = useState(false)
     const [tasks, setTasks] = useState<EditableTask[]>([])
-    const [error, setError] = useState<string | null>(null)
-    const [busy, setBusy] = useState(false)
 
     function startEditing() {
         setTasks(tasksToEditable(detail.tasks))
-        setError(null)
+        updateTasks.reset()
         setEditing(true)
     }
 
     async function save() {
-        if (!token) return
-        setBusy(true)
-        setError(null)
         try {
-            const updated = await projectsApi.updateTasks(
-                token,
-                detail.project.id,
+            await updateTasks.mutateAsync(
                 tasks
                     .filter((t) => t.name.trim() !== '')
                     .map((t) => ({ ...t, name: t.name.trim() })),
             )
-            onUpdated(updated)
             setEditing(false)
-        } catch (err) {
-            setError((err as Error).message)
-        } finally {
-            setBusy(false)
+        } catch {
+            // error surfaced via updateTasks.error below
         }
     }
+
+    const busy = updateTasks.isPending
+    const error = updateTasks.error?.message ?? null
 
     return (
         <div className="mb-10">
@@ -365,34 +322,9 @@ function DeliverablesSection({
 export default function ProjectDetail() {
     const { id } = useParams()
     const { user, token, loading } = useAuth()
-    const [detail, setDetail] = useState<Detail | null>(null)
-    const [people, setPeople] = useState<Person[]>([])
-    const [error, setError] = useState<string | null>(null)
-
     const projectId = useMemo(() => Number(id), [id])
-
-    useEffect(() => {
-        if (!token || Number.isNaN(projectId)) return
-        projectsApi
-            .detail(token, projectId)
-            .then(setDetail)
-            .catch((e: Error) => setError(e.message))
-    }, [token, projectId])
-
-    useEffect(() => {
-        peopleApi
-            .list()
-            .then(setPeople)
-            .catch(() => setPeople([]))
-    }, [])
-
-    function reload() {
-        if (token)
-            projectsApi
-                .detail(token, projectId)
-                .then(setDetail)
-                .catch(() => undefined)
-    }
+    const { data: detail, error } = useProjectDetail(projectId)
+    const { data: people = [] } = usePeople()
 
     if (loading) {
         return <PageMessage>Loading…</PageMessage>
@@ -411,7 +343,7 @@ export default function ProjectDetail() {
     if (error) {
         return (
             <section className={page}>
-                <FormError error={error} />
+                <FormError error={error.message} />
             </section>
         )
     }
@@ -449,12 +381,12 @@ export default function ProjectDetail() {
             </div>
 
             {user.role === 'BOARD' && detail.project.status === 'PENDING' && (
-                <BoardReview detail={detail} onReviewed={reload} />
+                <BoardReview detail={detail} />
             )}
 
-            <DeliverablesSection detail={detail} onUpdated={setDetail} />
-            <TeamSection detail={detail} people={people} onUpdated={setDetail} />
-            <DesignDocSections detail={detail} onUpdated={setDetail} />
+            <DeliverablesSection detail={detail} />
+            <TeamSection detail={detail} people={people} />
+            <DesignDocSections detail={detail} />
         </section>
     )
 }

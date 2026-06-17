@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { peopleApi } from '../features/people/api'
+import { useMemo } from 'react'
+import { usePeople } from '../features/people/queries'
 import type { Person } from '../features/people/types'
-import { projectsApi } from '../features/projects/api'
-import type { Project } from '../features/projects/types'
+import { useProjects } from '../features/projects/queries'
 import CompanyMarquee from '../features/people/CompanyMarquee'
 import { ProjectCard } from '../features/projects/ProjectCard'
 import { Avatar } from '../components/Avatar'
@@ -49,19 +48,8 @@ const TIMELINE = [
 ]
 
 export default function Home() {
-    const [projects, setProjects] = useState<Project[]>([])
-    const [people, setPeople] = useState<Person[]>([])
-
-    useEffect(() => {
-        projectsApi
-            .list()
-            .then(setProjects)
-            .catch(() => setProjects([]))
-        peopleApi
-            .list()
-            .then(setPeople)
-            .catch(() => setPeople([]))
-    }, [])
+    const { data: projects = [] } = useProjects()
+    const { data: people = [] } = usePeople()
 
     const activeProjects = useMemo(() => projects.filter((p) => p.active), [projects])
 

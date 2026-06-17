@@ -3,6 +3,8 @@ import type { User } from './features/auth/types'
 
 export const TOKEN_KEY = 'sc_token'
 
+export const meKey = ['me'] as const
+
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
 
 export interface AuthState {

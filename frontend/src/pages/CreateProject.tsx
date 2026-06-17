@@ -1,8 +1,8 @@
 import {useEffect, useMemo, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {peopleApi} from '../features/people/api'
+import {usePeople} from '../features/people/queries'
 import type {Person} from '../features/people/types'
-import {projectsApi} from '../features/projects/api'
+import {useCreateProject} from '../features/projects/queries'
 import {
     DESIGN_SECTIONS,
     DeliverablesEditor,
@@ -41,9 +41,10 @@ function stepNumClass(active: boolean) {
 export default function CreateProject() {
     const {user, token, loading} = useAuth()
     const navigate = useNavigate()
+    const {data: people = []} = usePeople()
+    const createProject = useCreateProject()
 
     const [step, setStep] = useState(0)
-    const [people, setPeople] = useState<Person[]>([])
 
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
@@ -54,14 +55,6 @@ export default function CreateProject() {
     const [tasks, setTasks] = useState<EditableTask[]>(requiredMilestones())
 
     const [error, setError] = useState<string | null>(null)
-    const [submitting, setSubmitting] = useState(false)
-
-    useEffect(() => {
-        peopleApi
-            .list()
-            .then(setPeople)
-            .catch(() => setPeople([]))
-    }, [])
 
     // You're always on your own team, and lead by default.
     useEffect(() => {
@@ -111,10 +104,9 @@ export default function CreateProject() {
             setStep(0)
             return
         }
-        setSubmitting(true)
         setError(null)
         try {
-            const detail = await projectsApi.create(token!, {
+            const detail = await createProject.mutateAsync({
                 title: title.trim(),
                 description: description.trim(),
                 repoUrl: repoUrl.trim() || undefined,
@@ -128,7 +120,6 @@ export default function CreateProject() {
             navigate(`/projects/${detail.project.id}`)
         } catch (err) {
             setError((err as Error).message)
-            setSubmitting(false)
         }
     }
 
@@ -248,8 +239,8 @@ export default function CreateProject() {
                     {step < STEPS.length - 1 ? (
                         <Button type="submit" className="w-2/3">Next: {STEPS[step + 1]}</Button>
                     ) : (
-                        <Button type="submit" className="w-2/3" disabled={submitting}>
-                            {submitting ? 'Submitting…' : 'Submit for board review'}
+                        <Button type="submit" className="w-2/3" disabled={createProject.isPending}>
+                            {createProject.isPending ? 'Submitting…' : 'Submit for board review'}
                         </Button>
                     )}
                 </FormActions>

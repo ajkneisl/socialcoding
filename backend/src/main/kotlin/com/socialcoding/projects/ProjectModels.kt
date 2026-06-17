@@ -13,5 +13,5 @@ data class TaskInput(
 )
 
 /** Decodes the comma-separated id columns on ProjectTasks. */
-fun String.toIdList(): List<Long> = split(',').mapNotNull { it.trim().toLongOrNull() }
+fun String.toIDList(): List<Long> = split(',').mapNotNull { it.trim().toLongOrNull() }
 

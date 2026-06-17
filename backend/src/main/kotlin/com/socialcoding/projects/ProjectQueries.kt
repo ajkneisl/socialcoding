@@ -51,12 +51,12 @@ fun withRequiredMilestones(tasks: List<TaskInput>): List<TaskInput> {
  * list and are translated to row ids once everything is inserted. Must be inside a transaction.
  */
 fun replaceTasks(projectId: Long, tasks: List<TaskInput>, teamIds: Set<Long>) {
-    ProjectTasks.deleteWhere { ProjectTasks.projectId eq projectId }
+    ProjectTasks.deleteWhere { ProjectTasks.projectID eq projectId }
     val newIds = tasks.map { task ->
         ProjectTasks.insert {
-            it[ProjectTasks.projectId] = projectId
+            it[ProjectTasks.projectID] = projectId
             it[name] = task.name.trim().take(300)
-            it[assigneeIds] = task.assigneeIds.filter { id -> id in teamIds }.joinToString(",")
+            it[assigneeIDs] = task.assigneeIds.filter { id -> id in teamIds }.joinToString(",")
             it[dueDate] = task.dueDate.trim().take(10)
             it[milestone] = task.milestone
         } get ProjectTasks.id
@@ -65,7 +65,7 @@ fun replaceTasks(projectId: Long, tasks: List<TaskInput>, teamIds: Set<Long>) {
         val deps = task.dependsOn.filter { it != i }.mapNotNull { newIds.getOrNull(it) }.distinct()
         if (deps.isNotEmpty()) {
             ProjectTasks.update({ ProjectTasks.id eq newIds[i] }) {
-                it[dependsOnIds] = deps.joinToString(",")
+                it[dependsOnIDs] = deps.joinToString(",")
             }
         }
     }

@@ -197,13 +197,13 @@ fun Route.projectRoutes() {
                 // Drop removed members from task assignments.
                 val teamSet = teamIds.toSet()
                 ProjectTasks.selectAll()
-                    .where { ProjectTasks.projectId eq detail.project.id }
-                    .map { it[ProjectTasks.id] to it[ProjectTasks.assigneeIds].toIdList() }
+                    .where { ProjectTasks.projectID eq detail.project.id }
+                    .map { it[ProjectTasks.id] to it[ProjectTasks.assigneeIDs].toIDList() }
                     .forEach { (taskID, assignees) ->
                         val kept = assignees.filter { it in teamSet }
                         if (kept.size != assignees.size) {
                             ProjectTasks.update({ ProjectTasks.id eq taskID }) {
-                                it[assigneeIds] = kept.joinToString(",")
+                                it[assigneeIDs] = kept.joinToString(",")
                             }
                         }
                     }

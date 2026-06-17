@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { peopleApi } from '../features/people/api'
-import type { Person } from '../features/people/types'
+import { useMemo, useState } from 'react'
+import { usePeople } from '../features/people/queries'
 import { PersonCard } from '../features/people/PersonCard'
 import { Chip } from '../components/Chip'
 import { FormError } from '../components/FormError'
@@ -8,16 +7,8 @@ import { SectionHead } from '../components/SectionHead'
 import { page } from '../components/styles'
 
 export default function People() {
-    const [people, setPeople] = useState<Person[]>([])
+    const { data: people = [], error } = usePeople()
     const [query, setQuery] = useState('')
-    const [error, setError] = useState<string | null>(null)
-
-    useEffect(() => {
-        peopleApi
-            .list()
-            .then(setPeople)
-            .catch((e: Error) => setError(e.message))
-    }, [])
 
     const companies = useMemo(() => {
         const counts = new Map<string, number>()
@@ -75,7 +66,7 @@ export default function People() {
                 aria-label="Search members"
             />
 
-            <FormError error={error} />
+            <FormError error={error?.message} />
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[1.1rem]">
                 {filtered.map((p) => (

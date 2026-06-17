@@ -121,7 +121,7 @@ data class ProjectDetail(
 
             val tasks =
                 ProjectTasks.selectAll()
-                    .where { ProjectTasks.projectId eq projectID }
+                    .where { ProjectTasks.projectID eq projectID }
                     .orderBy(ProjectTasks.dueDate)
                     .map { it.toTask() }
 

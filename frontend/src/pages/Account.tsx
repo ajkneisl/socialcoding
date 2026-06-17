@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { authApi } from '../features/auth/api'
 import GoogleSignIn from '../features/auth/GoogleSignIn'
-import { projectsApi } from '../features/projects/api'
-import type { Project } from '../features/projects/types'
+import { useUpdateProfile } from '../features/auth/queries'
+import { useMyProjects } from '../features/projects/queries'
 import { ProjectCard } from '../features/projects/ProjectCard'
 import { useAuth } from '../auth-context'
 import { Avatar } from '../components/Avatar'
@@ -14,7 +13,8 @@ import { PageMessage } from '../components/PageMessage'
 import { card, page } from '../components/styles'
 
 function ProfileForm() {
-    const { user, token, refreshUser } = useAuth()
+    const { user } = useAuth()
+    const updateProfile = useUpdateProfile()
     const [joinedTerm, setJoinedTerm] = useState(user?.joinedTerm ?? '')
     const [gradYear, setGradYear] = useState(user?.gradYear ? String(user.gradYear) : '')
     const [github, setGithub] = useState(user?.github ?? '')
@@ -22,15 +22,12 @@ function ProfileForm() {
     const [website, setWebsite] = useState(user?.website ?? '')
     const [company, setCompany] = useState(user?.company ?? '')
     const [saved, setSaved] = useState(false)
-    const [error, setError] = useState<string | null>(null)
 
     async function submit(e: FormEvent) {
         e.preventDefault()
-        if (!token) return
-        setError(null)
         setSaved(false)
         try {
-            await authApi.updateProfile(token, {
+            await updateProfile.mutateAsync({
                 joinedTerm: joinedTerm || null,
                 gradYear: gradYear ? Number(gradYear) : null,
                 github: github || null,
@@ -38,10 +35,9 @@ function ProfileForm() {
                 website: website || null,
                 company: company || null,
             })
-            await refreshUser()
             setSaved(true)
-        } catch (err) {
-            setError((err as Error).message)
+        } catch {
+            // error surfaced via updateProfile.error below
         }
     }
 
@@ -109,7 +105,7 @@ function ProfileForm() {
                     />
                 </label>
             </div>
-            <FormError error={error} />
+            <FormError error={updateProfile.error?.message} />
             {saved && <p className="m-0 text-green-400">Profile saved.</p>}
             <Button variant="ghost" type="submit" className="self-start">
                 Save profile
@@ -119,18 +115,9 @@ function ProfileForm() {
 }
 
 export default function Account() {
-    const { user, token, loading, logout } = useAuth()
-    const [myProjects, setMyProjects] = useState<Project[]>([])
+    const { user, loading, logout } = useAuth()
+    const { data: myProjects = [] } = useMyProjects()
     const [loginError, setLoginError] = useState<string | null>(null)
-
-    useEffect(() => {
-        if (token && user) {
-            projectsApi
-                .mine(token)
-                .then(setMyProjects)
-                .catch(() => setMyProjects([]))
-        }
-    }, [token, user])
 
     const onLoginError = useCallback((message: string) => setLoginError(message), [])
 

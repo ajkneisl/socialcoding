@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { boardApi } from '../features/board/api'
-import { projectsApi } from '../features/projects/api'
+import { usePendingProjects, useReviewProject } from '../features/board/queries'
+import { useProjects } from '../features/projects/queries'
 import type { PendingProject, Project } from '../features/projects/types'
 import { useAuth } from '../auth-context'
 import { Avatar } from '../components/Avatar'
@@ -14,33 +14,18 @@ import { page } from '../components/styles'
 
 const row = 'border-b border-line px-1 py-[1.4rem] hover:bg-bg-raised'
 
-function PendingProjectCard({
-    pending,
-    onReviewed,
-}: {
-    pending: PendingProject
-    onReviewed: (id: number) => void
-}) {
-    const { token } = useAuth()
+function PendingProjectCard({ pending }: { pending: PendingProject }) {
+    const reviewProject = useReviewProject()
     const [note, setNote] = useState('')
-    const [error, setError] = useState<string | null>(null)
-    const [busy, setBusy] = useState(false)
 
     const { project, members, teamLeadID } = pending
     const lead = members.find((m) => m.id === teamLeadID)
 
-    async function review(decision: 'approve' | 'reject') {
-        if (!token) return
-        setBusy(true)
-        setError(null)
-        try {
-            await boardApi.reviewProject(token, project.id, decision, note || undefined)
-            onReviewed(project.id)
-        } catch (err) {
-            setError((err as Error).message)
-            setBusy(false)
-        }
+    function review(decision: 'approve' | 'reject') {
+        reviewProject.mutate({ id: project.id, decision, note: note || undefined })
     }
+
+    const busy = reviewProject.isPending
 
     return (
         <article className={row}>
@@ -81,7 +66,7 @@ function PendingProjectCard({
                     maxLength={1000}
                 />
             </label>
-            <FormError error={error} className="mt-2" />
+            <FormError error={reviewProject.error?.message} className="mt-2" />
             <div className="mt-[0.9rem] flex gap-[0.6rem]">
                 <Button disabled={busy} onClick={() => review('approve')}>
                     Approve
@@ -95,19 +80,14 @@ function PendingProjectCard({
 }
 
 function ApprovedProjectRow({ project }: { project: Project }) {
-    const { token } = useAuth()
-    const [active, setActive] = useState(project.active)
-    const [busy, setBusy] = useState(false)
+    const reviewProject = useReviewProject()
+    const active = project.active
 
-    async function toggle() {
-        if (!token) return
-        setBusy(true)
-        try {
-            await boardApi.reviewProject(token, project.id, active ? 'deactivate' : 'activate')
-            setActive(!active)
-        } finally {
-            setBusy(false)
-        }
+    function toggle() {
+        reviewProject.mutate({
+            id: project.id,
+            decision: active ? 'deactivate' : 'activate',
+        })
     }
 
     return (
@@ -119,7 +99,7 @@ function ApprovedProjectRow({ project }: { project: Project }) {
                     {active ? 'shown on the home page' : 'listed under past projects'}
                 </p>
             </div>
-            <Button variant="ghost" disabled={busy} onClick={toggle}>
+            <Button variant="ghost" disabled={reviewProject.isPending} onClick={toggle}>
                 {active ? 'Mark inactive' : 'Mark active'}
             </Button>
         </article>
@@ -127,28 +107,9 @@ function ApprovedProjectRow({ project }: { project: Project }) {
 }
 
 export default function Board() {
-    const { user, token, loading } = useAuth()
-    const [pending, setPending] = useState<PendingProject[]>([])
-    const [approved, setApproved] = useState<Project[]>([])
-    const [error, setError] = useState<string | null>(null)
-
-    useEffect(() => {
-        if (token && user?.role === 'BOARD') {
-            boardApi
-                .pendingProjects(token)
-                .then(setPending)
-                .catch((e: Error) => setError(e.message))
-            projectsApi
-                .list()
-                .then(setApproved)
-                .catch(() => setApproved([]))
-        }
-    }, [token, user])
-
-    const onReviewed = useCallback(
-        (id: number) => setPending((prev) => prev.filter((p) => p.project.id !== id)),
-        [],
-    )
+    const { user, loading } = useAuth()
+    const { data: pending = [], error } = usePendingProjects()
+    const { data: approved = [] } = useProjects()
 
     if (loading) {
         return <PageMessage>Loading…</PageMessage>
@@ -168,17 +129,13 @@ export default function Board() {
             <SectionHead eyebrow="Board" title="Pending projects">
                 Review project's design docs.
             </SectionHead>
-            <FormError error={error} />
+            <FormError error={error?.message} />
             {pending.length === 0 ? (
                 <p className="text-text-soft">Queue is empty. Nice work.</p>
             ) : (
                 <div className="border-t border-line">
                     {pending.map((p) => (
-                        <PendingProjectCard
-                            key={p.project.id}
-                            pending={p}
-                            onReviewed={onReviewed}
-                        />
+                        <PendingProjectCard key={p.project.id} pending={p} />
                     ))}
                 </div>
             )}
