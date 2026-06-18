@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth-context'
-import { createEvent, deleteEvent, listEvents } from './api'
+import { createEvent, deleteEvent, listEvents, updateEvent } from './api'
 import type { CreateEventRequest } from './types'
 
 export const eventKeys = {
@@ -28,6 +28,18 @@ export function useCreateEvent() {
     const queryClient = useQueryClient()
     return useMutation({
         mutationFn: (event: CreateEventRequest) => createEvent(token!, event),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: eventKeys.all })
+        },
+    })
+}
+
+export function useUpdateEvent() {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, event }: { id: number; event: CreateEventRequest }) =>
+            updateEvent(token!, id, event),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: eventKeys.all })
         },

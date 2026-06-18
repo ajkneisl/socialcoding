@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useEvent } from '../features/events/queries'
 import { AnchorButton } from '../components/Button'
 import { ExternalLinkIcon } from '../components/ExternalLinkIcon'
+import { Markdown } from '../components/Markdown'
 import { PageMessage } from '../components/PageMessage'
 import { page } from '../components/styles'
 
@@ -62,11 +63,7 @@ export default function EventDetail() {
 
                 <p className="text-[1.13rem] text-text-soft">{event.summary}</p>
 
-                {event.body && (
-                    <div className="mt-4 max-w-[70ch] whitespace-pre-line text-text-soft">
-                        {event.body}
-                    </div>
-                )}
+                {event.body && <Markdown className="mt-4 max-w-[70ch]">{event.body}</Markdown>}
 
                 {event.burrowUrl && (
                     <div className="mt-8">

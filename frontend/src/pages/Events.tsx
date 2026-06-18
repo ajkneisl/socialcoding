@@ -6,8 +6,12 @@ import type { Event } from '../features/events/types'
 import { dayKey } from '../features/events/util'
 import { ExternalLinkIcon } from '../components/ExternalLinkIcon'
 import { FormError } from '../components/FormError'
+import { Pagination } from '../components/Pagination'
+import { usePaged } from '../components/usePaged'
 import { SectionHead } from '../components/SectionHead'
 import { page } from '../components/styles'
+
+const PAGE_SIZE = 8
 
 function EventCard({ event }: { event: Event }) {
     const date = new Date(event.startsAt)
@@ -80,6 +84,8 @@ export default function Events() {
         [events, selectedKey],
     )
 
+    const { page: pageNum, setPage, pageCount, pageItems } = usePaged(visible, PAGE_SIZE)
+
     return (
         <section className={page}>
             <SectionHead eyebrow="Events" title="What's happening">
@@ -100,7 +106,16 @@ export default function Events() {
                                 : 'No events yet. Check back soon.'}
                         </p>
                     ) : (
-                        visible.map((e) => <EventCard key={e.id} event={e} />)
+                        <>
+                            {pageItems.map((e) => (
+                                <EventCard key={e.id} event={e} />
+                            ))}
+                            <Pagination
+                                page={pageNum}
+                                pageCount={pageCount}
+                                onChange={setPage}
+                            />
+                        </>
                     )}
                 </div>
 
@@ -108,7 +123,10 @@ export default function Events() {
                     <Calendar
                         events={events}
                         selectedKey={selectedKey}
-                        onSelectDay={setSelectedKey}
+                        onSelectDay={(key) => {
+                            setSelectedKey(key)
+                            setPage(0)
+                        }}
                     />
                 </div>
             </div>
