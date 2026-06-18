@@ -4,5 +4,6 @@
 data/
 backend/data/
 backend/build/
-backend/.gradle
+backend/.gradle/
 backend/.kotlin
+googlelogin.env

@@ -57,7 +57,11 @@ fun initDb() {
         password = Environment.getVariable("DB_PASS"),
     )
 
-    transaction { SchemaUtils.create(Users, Projects, ProjectMembers, ProjectTasks, Events) }
+    transaction {
+        // createMissingTablesAndColumns (not create) so columns added later — e.g. Users.listed —
+        // are applied to tables that already exist in a persisted database.
+        SchemaUtils.createMissingTablesAndColumns(Users, Projects, ProjectMembers, ProjectTasks, Events)
+    }
 }
 
 /** Ktor root module. */

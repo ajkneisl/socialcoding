@@ -19,6 +19,7 @@ object Users : Table("users") {
     val website = varchar("website", 512).nullable()
     val company = varchar("company", 255).nullable()
     val title = varchar("title", 64).nullable()
+    val listed = bool("listed").default(true)
     val createdAt = long("created_at")
 
     override val primaryKey = PrimaryKey(id)
@@ -45,6 +46,7 @@ data class User(
     val company: String?,
     val title: String? = null,
     val avatarUrl: String? = null,
+    val listed: Boolean = true,
 )
 
 fun ResultRow.toUser() =
@@ -61,4 +63,5 @@ fun ResultRow.toUser() =
         company = this[Users.company],
         title = this[Users.title],
         avatarUrl = this[Users.avatarUrl],
+        listed = this[Users.listed],
     )

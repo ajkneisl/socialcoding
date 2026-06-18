@@ -1,14 +1,26 @@
-import { useMemo, useState } from 'react'
-import { usePeople } from '../features/people/queries'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { peopleApi } from '../features/people/api'
+import type { Person } from '../features/people/types'
 import { PersonCard } from '../features/people/PersonCard'
+import { useAuth } from '../auth-context'
 import { Chip } from '../components/Chip'
 import { FormError } from '../components/FormError'
 import { SectionHead } from '../components/SectionHead'
 import { page } from '../components/styles'
 
 export default function People() {
-    const { data: people = [], error } = usePeople()
+    const { user } = useAuth()
+    const [people, setPeople] = useState<Person[]>([])
     const [query, setQuery] = useState('')
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        peopleApi
+            .list()
+            .then(setPeople)
+            .catch((e: Error) => setError(e.message))
+    }, [])
 
     const companies = useMemo(() => {
         const counts = new Map<string, number>()
@@ -36,6 +48,17 @@ export default function People() {
             <SectionHead eyebrow="People" title="Members">
                 Everyone who has been part of Social Coding. Sign in to add yourself.
             </SectionHead>
+
+            {user && (
+                <div className="mb-8 flex flex-wrap items-center gap-3">
+                    <span className="text-text-soft italic">
+                        {user.listed
+                            ? "You're visible on the public member list."
+                            : "You're not shown on the public member list."}{' '}
+                        <Link to="/account">Change this in your profile.</Link>
+                    </span>
+                </div>
+            )}
 
             {companies.length > 0 && (
                 <div className="mb-8">
@@ -66,7 +89,7 @@ export default function People() {
                 aria-label="Search members"
             />
 
-            <FormError error={error?.message} />
+            <FormError error={error} />
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[1.1rem]">
                 {filtered.map((p) => (
@@ -74,7 +97,7 @@ export default function People() {
                 ))}
             </div>
             {!error && filtered.length === 0 && (
-                <p className="text-text-soft">No members match “{query}”.</p>
+                <p className="text-text-soft">No members listed.</p>
             )}
         </section>
     )
