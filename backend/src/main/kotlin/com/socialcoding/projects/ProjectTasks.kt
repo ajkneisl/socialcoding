@@ -21,7 +21,7 @@ object ProjectTasks : Table("project_tasks") {
 data class ProjectTask(
     val id: Long,
     val name: String,
-    val assigneeIDs: List<Long>,
+    val assigneeIds: List<Long>,
     val dueDate: String,
     val dependsOn: List<Long>,
     val milestone: Boolean,
@@ -31,7 +31,7 @@ fun ResultRow.toTask() =
     ProjectTask(
         id = this[ProjectTasks.id],
         name = this[ProjectTasks.name],
-        assigneeIDs = this[ProjectTasks.assigneeIDs].toIDList(),
+        assigneeIds = this[ProjectTasks.assigneeIDs].toIDList(),
         dueDate = this[ProjectTasks.dueDate],
         dependsOn = this[ProjectTasks.dependsOnIDs].toIDList(),
         milestone = this[ProjectTasks.milestone],

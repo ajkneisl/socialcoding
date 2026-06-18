@@ -31,6 +31,9 @@ export default function Layout() {
             <NavLink to="/projects" className={navLinkClass} onClick={() => setMenuOpen(false)}>
                 Projects
             </NavLink>
+            <NavLink to="/events" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+                Events
+            </NavLink>
             <NavLink to="/people" className={navLinkClass} onClick={() => setMenuOpen(false)}>
                 People
             </NavLink>
@@ -130,6 +133,9 @@ export default function Layout() {
                         </h4>
                         <Link to="/projects" className="text-text-soft hover:text-gold">
                             Projects
+                        </Link>
+                        <Link to="/events" className="text-text-soft hover:text-gold">
+                            Events
                         </Link>
                         <Link to="/people" className="text-text-soft hover:text-gold">
                             People

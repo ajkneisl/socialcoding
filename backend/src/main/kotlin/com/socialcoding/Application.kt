@@ -4,6 +4,8 @@ import com.socialcoding.auth.Auth
 import com.socialcoding.auth.authRoutes
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.ApiError
+import com.socialcoding.events.Events
+import com.socialcoding.events.eventRoutes
 import com.socialcoding.db.ProjectMembers
 import com.socialcoding.projects.ProjectTasks
 import com.socialcoding.projects.Projects
@@ -55,7 +57,7 @@ fun initDb() {
         password = Environment.getVariable("DB_PASS"),
     )
 
-    transaction { SchemaUtils.create(Users, Projects, ProjectMembers, ProjectTasks) }
+    transaction { SchemaUtils.create(Users, Projects, ProjectMembers, ProjectTasks, Events) }
 }
 
 /** Ktor root module. */
@@ -79,6 +81,7 @@ fun Application.rootModule() {
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
     }
 
     install(StatusPages) {
@@ -107,6 +110,7 @@ fun Application.rootModule() {
             peopleRoutes()
             projectRoutes()
             boardRoutes()
+            eventRoutes()
         }
     }
 }
