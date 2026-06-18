@@ -7,6 +7,7 @@ import { ProjectCard } from '../features/projects/ProjectCard'
 import { useAuth } from '../auth-context'
 import { Avatar } from '../components/Avatar'
 import { Button, LinkButton } from '../components/Button'
+import { Switch } from '../components/Switch'
 import { FormError } from '../components/FormError'
 import { NoticeCard } from '../components/NoticeCard'
 import { PageMessage } from '../components/PageMessage'
@@ -21,6 +22,7 @@ function ProfileForm() {
     const [linkedin, setLinkedin] = useState(user?.linkedin ?? '')
     const [website, setWebsite] = useState(user?.website ?? '')
     const [company, setCompany] = useState(user?.company ?? '')
+    const [listed, setListed] = useState(user?.listed ?? true)
     const [saved, setSaved] = useState(false)
 
     async function submit(e: FormEvent) {
@@ -34,6 +36,7 @@ function ProfileForm() {
                 linkedin: linkedin || null,
                 website: website || null,
                 company: company || null,
+                listed,
             })
             setSaved(true)
         } catch {
@@ -97,6 +100,7 @@ function ProfileForm() {
                     />
                 </label>
                 <label>
+                    Companies worked at
                     <input
                         value={company}
                         onChange={(e) => setCompany(e.target.value)}
@@ -105,9 +109,15 @@ function ProfileForm() {
                     />
                 </label>
             </div>
+            <Switch
+                checked={listed}
+                onChange={setListed}
+                label="Show up on member list"
+                description="When on, your profile appears on the public People page."
+            />
             <FormError error={updateProfile.error?.message} />
             {saved && <p className="m-0 text-green-400">Profile saved.</p>}
-            <Button variant="ghost" type="submit" className="self-start">
+            <Button variant="primary" type="submit" className="self-start">
                 Save profile
             </Button>
         </form>

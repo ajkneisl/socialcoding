@@ -15,5 +15,6 @@ export const updateProfile = (
         linkedin?: string | null
         website?: string | null
         company?: string | null
+        listed?: boolean
     },
 ) => request<User>('/api/me', { method: 'POST', body: profile, token })

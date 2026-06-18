@@ -97,6 +97,7 @@ fun Route.authRoutes() {
          * @param linkedin The user's LinkedIn URL.
          * @param website The user's portfolio.
          * @param company Where the user works.
+         * @param listed Whether to show on the public member directory. Omitted leaves it unchanged.
          */
         @Serializable
         data class UpdateProfileRequest(
@@ -106,6 +107,7 @@ fun Route.authRoutes() {
             val linkedin: String? = null,
             val website: String? = null,
             val company: String? = null,
+            val listed: Boolean? = null,
         )
 
         // POST /api/me
@@ -122,6 +124,7 @@ fun Route.authRoutes() {
                     it[linkedin] = body.linkedin
                     it[website] = body.website
                     it[company] = body.company
+                    if (body.listed != null) it[listed] = body.listed
                 }
                 Users.selectAll().where { Users.id eq userId }.first().toUser()
             }

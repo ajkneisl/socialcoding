@@ -9,6 +9,7 @@ type ProfileUpdate = {
     linkedin?: string | null
     website?: string | null
     company?: string | null
+    listed?: boolean
 }
 
 export function useUpdateProfile() {

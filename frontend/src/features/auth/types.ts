@@ -13,6 +13,7 @@ export interface User {
     company: string | null
     title?: string | null
     avatarUrl?: string | null
+    listed: boolean
 }
 
 export interface LoginResponse {
