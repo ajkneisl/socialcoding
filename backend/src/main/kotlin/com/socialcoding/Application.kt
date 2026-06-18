@@ -4,6 +4,8 @@ import com.socialcoding.auth.Auth
 import com.socialcoding.auth.authRoutes
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.ApiError
+import com.socialcoding.events.Events
+import com.socialcoding.events.eventRoutes
 import com.socialcoding.db.ProjectMembers
 import com.socialcoding.projects.ProjectTasks
 import com.socialcoding.projects.Projects
@@ -58,7 +60,7 @@ fun initDb() {
     transaction {
         // createMissingTablesAndColumns (not create) so columns added later — e.g. Users.listed —
         // are applied to tables that already exist in a persisted database.
-        SchemaUtils.createMissingTablesAndColumns(Users, Projects, ProjectMembers, ProjectTasks)
+        SchemaUtils.createMissingTablesAndColumns(Users, Projects, ProjectMembers, ProjectTasks, Events)
     }
 }
 
@@ -83,6 +85,7 @@ fun Application.rootModule() {
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
     }
 
     install(StatusPages) {
@@ -111,6 +114,7 @@ fun Application.rootModule() {
             peopleRoutes()
             projectRoutes()
             boardRoutes()
+            eventRoutes()
         }
     }
 }
