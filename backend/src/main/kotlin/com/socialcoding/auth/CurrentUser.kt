@@ -8,6 +8,7 @@ import io.ktor.server.auth.principal
 import io.ktor.server.routing.RoutingContext
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 /** The signed-in user's ID from the session JWT. */
 fun RoutingContext.currentUserID(): Long = call.principal<JWTPrincipal>()!!.subject!!.toLong()
@@ -16,9 +17,10 @@ fun RoutingContext.currentUserID(): Long = call.principal<JWTPrincipal>()!!.subj
 fun RoutingContext.currentRole(): Role {
     val userID = currentUserID()
 
-    val userRow =
+    val userRow = transaction {
         Users.selectAll().where { Users.id eq userID }.singleOrNull()
             ?: throw InvalidAuthorization()
+    }
 
     return userRow[Users.role]
 }

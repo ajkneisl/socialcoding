@@ -1,16 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { usePendingProjects, useReviewProject } from '../features/board/queries'
-import { useProjects } from '../features/projects/queries'
-import type { PendingProject, Project } from '../features/projects/types'
-import { useAuth } from '../auth-context'
-import { Avatar } from '../components/Avatar'
-import { Badge } from '../components/Badge'
-import { Button } from '../components/Button'
-import { FormError } from '../components/FormError'
-import { PageMessage } from '../components/PageMessage'
-import { SectionHead } from '../components/SectionHead'
-import { page } from '../components/styles'
+import { usePendingProjects, useReviewProject } from '../../features/board/queries'
+import { useProjects } from '../../features/projects/queries'
+import type { PendingProject, Project } from '../../features/projects/types'
+import { Avatar } from '../../components/Avatar'
+import { Badge } from '../../components/Badge'
+import { Button } from '../../components/Button'
+import { FormError } from '../../components/FormError'
+import { SectionHead } from '../../components/SectionHead'
 
 const row = 'border-b border-line px-1 py-[1.4rem] hover:bg-bg-raised'
 
@@ -106,29 +103,13 @@ function ApprovedProjectRow({ project }: { project: Project }) {
     )
 }
 
-export default function Board() {
-    const { user, loading } = useAuth()
+export default function BoardProjects() {
     const { data: pending = [], error } = usePendingProjects()
     const { data: approved = [] } = useProjects()
 
-    if (loading) {
-        return <PageMessage>Loading…</PageMessage>
-    }
-
-    if (!user || user.role !== 'BOARD') {
-        return (
-            <section className={page}>
-                <h2>Board only</h2>
-                <p className="text-text-soft">This page is for Social Coding board members.</p>
-            </section>
-        )
-    }
-
     return (
-        <section className={page}>
-            <SectionHead eyebrow="Board" title="Pending projects">
-                Review project's design docs.
-            </SectionHead>
+        <>
+            <SectionHead title="Pending projects">Review project's design docs.</SectionHead>
             <FormError error={error?.message} />
             {pending.length === 0 ? (
                 <p className="text-text-soft">Queue is empty. Nice work.</p>
@@ -153,6 +134,6 @@ export default function Board() {
                     </div>
                 </>
             )}
-        </section>
+        </>
     )
 }
