@@ -49,8 +49,8 @@ export default function CreateProject() {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [repoUrl, setRepoUrl] = useState('')
-    const [memberIds, setMemberIds] = useState<number[]>([])
-    const [leadId, setLeadId] = useState<number>(0)
+    const [memberIds, setMemberIds] = useState<string[]>([])
+    const [leadId, setLeadId] = useState<string>('')
     const [doc, setDoc] = useState<DesignDoc>(emptyDesignDoc())
     const [tasks, setTasks] = useState<EditableTask[]>(requiredMilestones())
 

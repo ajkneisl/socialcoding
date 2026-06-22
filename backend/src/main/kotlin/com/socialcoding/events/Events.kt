@@ -20,7 +20,7 @@ object Events : Table("events") {
     val burrowUrl = varchar("burrow_url", 512).nullable()
     val imageUrl = varchar("image_url", 512).nullable()
     val attendance = bool("attendance").default(false)
-    val createdBy = long("created_by").references(Users.id)
+    val createdBy = uuid("created_by").references(Users.id)
     val createdAt = long("created_at")
 
     override val primaryKey = PrimaryKey(id)

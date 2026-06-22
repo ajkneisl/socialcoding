@@ -15,10 +15,10 @@ object Auth {
     val verifier: JWTVerifier = JWT.require(ALGO).withIssuer(ISSUER).build()
 
     /** Issue a JWT to [userID]. */
-    fun issue(userID: Long): String =
+    fun issue(userID: String): String =
         JWT.create()
             .withIssuer(ISSUER)
-            .withSubject(userID.toString())
+            .withSubject(userID)
             .withExpiresAt(Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000))
             .sign(ALGO)
 }

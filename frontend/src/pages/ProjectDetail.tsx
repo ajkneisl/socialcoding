@@ -74,7 +74,7 @@ function BoardReview({ detail }: { detail: Detail }) {
 function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
     const updateMembers = useUpdateProjectMembers(detail.project.id)
     const [editing, setEditing] = useState(false)
-    const [memberIds, setMemberIds] = useState<number[]>([])
+    const [memberIds, setMemberIds] = useState<string[]>([])
     const [leadId, setLeadId] = useState(detail.teamLeadId)
 
     function startEditing() {

@@ -1,7 +1,7 @@
 import type { Role } from '../auth/types'
 
 export interface Person {
-    id: number
+    id: string
     name: string
     joinedTerm: string | null
     gradYear: number | null

@@ -14,11 +14,11 @@ export function TeamPicker({
                                onChange,
                            }: {
     people: Person[]
-    memberIds: number[]
-    leadId: number
+    memberIds: string[]
+    leadId: string
     /** Members that can't be removed (e.g. yourself while creating). */
-    lockedIds?: number[]
-    onChange: (memberIds: number[], leadId: number) => void
+    lockedIds?: string[]
+    onChange: (memberIds: string[], leadId: string) => void
 }) {
     const [query, setQuery] = useState('')
     const byId = new Map(people.map((p) => [p.id, p]))

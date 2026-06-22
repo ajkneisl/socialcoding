@@ -10,7 +10,11 @@ version = "1.0.0-SNAPSHOT"
 
 application { mainClass = "com.socialcoding.ApplicationKt" }
 
-kotlin { jvmToolchain(21) }
+kotlin {
+    jvmToolchain(21)
+    // Exposed's uuid() columns and our user ids use kotlin.uuid.Uuid, still experimental in 2.3.
+    compilerOptions { optIn.add("kotlin.uuid.ExperimentalUuidApi") }
+}
 
 tasks.test {
     environment("DATABASE_URL", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL")

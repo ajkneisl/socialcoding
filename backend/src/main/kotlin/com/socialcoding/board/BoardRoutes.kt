@@ -8,6 +8,7 @@ import com.socialcoding.projects.ProjectStatus
 import com.socialcoding.projects.Projects
 import com.socialcoding.db.Role
 import com.socialcoding.projects.pendingProjects
+import com.socialcoding.projects.toUuidOrNull
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
@@ -46,7 +47,7 @@ fun Route.boardRoutes() {
             post("/projects/{id}/{decision}") {
                 if (currentRole() != Role.BOARD) throw InvalidAuthorization()
 
-                val projectID = call.parameters["id"]?.toLongOrNull()
+                val projectID = call.parameters["id"]?.toUuidOrNull()
                 val decision = call.parameters["decision"]?.lowercase()
 
                 if (projectID == null || decision !in decisions) throw NotFound("project")

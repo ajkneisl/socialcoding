@@ -14,7 +14,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 /** Public profile shown on the People page; deliberately omits the email. */
 @Serializable
 data class Person(
-    val id: Long,
+    val id: String,
     val name: String,
     val joinedTerm: String?,
     val gradYear: Int?,
@@ -29,7 +29,7 @@ data class Person(
 
 fun ResultRow.toPerson() =
     Person(
-        id = this[Users.id],
+        id = this[Users.id].toString(),
         name = this[Users.name],
         joinedTerm = this[Users.joinedTerm],
         gradYear = this[Users.gradYear],

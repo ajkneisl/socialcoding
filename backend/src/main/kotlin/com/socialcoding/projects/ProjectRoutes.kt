@@ -47,8 +47,8 @@ fun Route.projectRoutes() {
             val title: String,
             val description: String,
             val repoUrl: String? = null,
-            val teamLeadId: Long? = null,
-            val memberIds: List<Long> = emptyList(),
+            val teamLeadId: String? = null,
+            val memberIds: List<String> = emptyList(),
             val designDoc: DesignDocContent = DesignDocContent(),
             val tasks: List<TaskInput> = emptyList(),
         )
@@ -68,10 +68,13 @@ fun Route.projectRoutes() {
 
             val projectID = transaction {
                 val requestedIds =
-                    (body.memberIds + userID + listOfNotNull(body.teamLeadId)).distinct()
+                    (body.memberIds.mapNotNull { it.toUuidOrNull() } +
+                            userID +
+                            listOfNotNull(body.teamLeadId?.toUuidOrNull()))
+                        .distinct()
                 val teamIds =
                     Users.selectAll().where { Users.id inList requestedIds }.map { it[Users.id] }
-                val leadID = body.teamLeadId?.takeIf { it in teamIds } ?: userID
+                val leadID = body.teamLeadId?.toUuidOrNull()?.takeIf { it in teamIds } ?: userID
                 val id =
                     Projects.insert {
                         it[title] = body.title.trim()
@@ -106,9 +109,9 @@ fun Route.projectRoutes() {
         // GET /api/projects/{id}
         // load a single project's full design doc
         get("/projects/{id}") {
-            val projectID = call.parameters["id"]?.toLongOrNull()
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
             val detail =
-                projectID?.let { ProjectDetail.from(it, currentUserID(), currentRole()) }
+                ProjectDetail.from(projectID, currentUserID(), currentRole())
                     ?: throw NotFound("project")
 
             call.respond(detail)
@@ -133,9 +136,9 @@ fun Route.projectRoutes() {
         // PUT /api/projects/{id}/design
         // update a project's title, description, repo link, and design doc answers
         put("/projects/{id}/design") {
-            val projectID = call.parameters["id"]?.toLongOrNull()
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
             val detail =
-                projectID?.let { ProjectDetail.from(it, currentUserID(), currentRole()) }
+                ProjectDetail.from(projectID, currentUserID(), currentRole())
                     ?: throw NotFound("project")
             if (!detail.canEdit) throw InvalidAuthorization()
 
@@ -148,7 +151,7 @@ fun Route.projectRoutes() {
             }
 
             transaction {
-                Projects.update({ Projects.id eq detail.project.id }) {
+                Projects.update({ Projects.id eq projectID }) {
                     it[title] = body.title.trim()
                     it[description] = body.description.trim()
                     it[repoUrl] = body.repoUrl?.trim()?.ifBlank { null }
@@ -156,7 +159,7 @@ fun Route.projectRoutes() {
                 }
             }
 
-            call.respond(ProjectDetail.from(detail.project.id, currentUserID(), currentRole())!!)
+            call.respond(ProjectDetail.from(projectID, currentUserID(), currentRole())!!)
         }
 
         /**
@@ -166,39 +169,41 @@ fun Route.projectRoutes() {
          * @param teamLeadId The ID of the new team lead.
          */
         @Serializable
-        data class UpdateMembersRequest(val memberIds: List<Long>, val teamLeadId: Long)
+        data class UpdateMembersRequest(val memberIds: List<String>, val teamLeadId: String)
 
         // PUT /api/projects/{id}/members
         // replace a project's membership and team lead
         put("/projects/{id}/members") {
-            val projectID = call.parameters["id"]?.toLongOrNull()
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
             val detail =
-                projectID?.let { ProjectDetail.from(it, currentUserID(), currentRole()) }
+                ProjectDetail.from(projectID, currentUserID(), currentRole())
                     ?: throw NotFound("project")
             if (!detail.canManageTeam) throw InvalidAuthorization()
 
             val body = call.receive<UpdateMembersRequest>()
 
             val applied = transaction {
-                val requestedIds = (body.memberIds + body.teamLeadId).distinct()
+                val leadID = body.teamLeadId.toUuidOrNull() ?: return@transaction false
+                val requestedIds =
+                    (body.memberIds.mapNotNull { it.toUuidOrNull() } + leadID).distinct()
                 val teamIds =
                     Users.selectAll().where { Users.id inList requestedIds }.map { it[Users.id] }
-                if (body.teamLeadId !in teamIds) return@transaction false
-                Projects.update({ Projects.id eq detail.project.id }) {
-                    it[teamLeadId] = body.teamLeadId
+                if (leadID !in teamIds) return@transaction false
+                Projects.update({ Projects.id eq projectID }) {
+                    it[teamLeadId] = leadID
                 }
-                ProjectMembers.deleteWhere { ProjectMembers.projectID eq detail.project.id }
+                ProjectMembers.deleteWhere { ProjectMembers.projectID eq projectID }
                 teamIds.forEach { memberID ->
                     ProjectMembers.insert {
-                        it[ProjectMembers.projectID] = detail.project.id
+                        it[ProjectMembers.projectID] = projectID
                         it[ProjectMembers.userID] = memberID
                     }
                 }
                 // Drop removed members from task assignments.
                 val teamSet = teamIds.toSet()
                 ProjectTasks.selectAll()
-                    .where { ProjectTasks.projectID eq detail.project.id }
-                    .map { it[ProjectTasks.id] to it[ProjectTasks.assigneeIDs].toIDList() }
+                    .where { ProjectTasks.projectID eq projectID }
+                    .map { it[ProjectTasks.id] to it[ProjectTasks.assigneeIDs].toUserIdList() }
                     .forEach { (taskID, assignees) ->
                         val kept = assignees.filter { it in teamSet }
                         if (kept.size != assignees.size) {
@@ -218,7 +223,7 @@ fun Route.projectRoutes() {
             }
 
             // A lead who hands off and leaves the team may no longer be able to see a pending doc.
-            val updated = ProjectDetail.from(detail.project.id, currentUserID(), currentRole())
+            val updated = ProjectDetail.from(projectID, currentUserID(), currentRole())
             if (updated == null) call.respond(HttpStatusCode.OK) else call.respond(updated)
         }
 
@@ -232,20 +237,20 @@ fun Route.projectRoutes() {
         // PUT /api/projects/{id}/tasks
         // replace a project's deliverables, keeping only assignees who are on the team
         put("/projects/{id}/tasks") {
-            val projectID = call.parameters["id"]?.toLongOrNull()
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
             val detail =
-                projectID?.let { ProjectDetail.from(it, currentUserID(), currentRole()) }
+                ProjectDetail.from(projectID, currentUserID(), currentRole())
                     ?: throw NotFound("project")
             if (!detail.canEdit) throw InvalidAuthorization()
 
             val body = call.receive<UpdateTasksRequest>()
 
             transaction {
-                val teamIds = memberIdsOf(detail.project.id).toSet()
-                replaceTasks(detail.project.id, withRequiredMilestones(body.tasks), teamIds)
+                val teamIds = memberIdsOf(projectID).toSet()
+                replaceTasks(projectID, withRequiredMilestones(body.tasks), teamIds)
             }
 
-            call.respond(ProjectDetail.from(detail.project.id, currentUserID(), currentRole())!!)
+            call.respond(ProjectDetail.from(projectID, currentUserID(), currentRole())!!)
         }
     }
 }

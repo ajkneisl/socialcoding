@@ -78,7 +78,7 @@ export function useUpdateProjectMembers(id: number) {
     const { token } = useAuth()
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (body: { memberIds: number[]; teamLeadId: number }) =>
+        mutationFn: (body: { memberIds: string[]; teamLeadId: string }) =>
             updateProjectMembers(token!, id, body),
         onSuccess: (updated) => {
             if (updated) queryClient.setQueryData(projectKeys.detail(id), updated)

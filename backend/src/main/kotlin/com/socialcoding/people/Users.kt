@@ -1,12 +1,13 @@
 package com.socialcoding.db
 
+import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Table
 
 /** [User] table. */
 object Users : Table("users") {
-    val id = long("id").autoIncrement()
+    val id = uuid("id").clientDefault { Uuid.random() }
     val googleID = varchar("google_id", 64).nullable().uniqueIndex()
     val email = varchar("email", 255).uniqueIndex()
     val name = varchar("name", 255)
@@ -34,7 +35,7 @@ enum class Role {
 /** A signed-in user's record. */
 @Serializable
 data class User(
-    val id: Long,
+    val id: String,
     val email: String,
     val name: String,
     val role: Role,
@@ -51,7 +52,7 @@ data class User(
 
 fun ResultRow.toUser() =
     User(
-        id = this[Users.id],
+        id = this[Users.id].toString(),
         email = this[Users.email],
         name = this[Users.name],
         role = this[Users.role],

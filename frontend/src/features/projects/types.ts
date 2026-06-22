@@ -19,7 +19,7 @@ export interface Project {
 export interface ProjectTask {
     id: number
     name: string
-    assigneeIds: number[]
+    assigneeIds: string[]
     dueDate: string
     dependsOn: number[]
     milestone: boolean
@@ -28,14 +28,14 @@ export interface ProjectTask {
 /** Task as sent to the API; dependencies are indices into the submitted list. */
 export interface TaskInput {
     name: string
-    assigneeIds: number[]
+    assigneeIds: string[]
     dueDate: string
     dependsOn: number[]
     milestone: boolean
 }
 
 export interface ProjectMember {
-    id: number
+    id: string
     name: string
     avatarUrl?: string | null
 }
@@ -43,7 +43,7 @@ export interface ProjectMember {
 export interface ProjectDetail {
     project: Project
     designDoc: DesignDoc
-    teamLeadId: number
+    teamLeadId: string
     members: ProjectMember[]
     tasks: ProjectTask[]
     canEdit: boolean
@@ -53,7 +53,7 @@ export interface ProjectDetail {
 /** A pending project paired with its team, for the board review queue. */
 export interface PendingProject {
     project: Project
-    teamLeadID: number
+    teamLeadID: string
     members: ProjectMember[]
 }
 
@@ -61,8 +61,8 @@ export interface CreateProjectRequest {
     title: string
     description: string
     repoUrl?: string
-    teamLeadId?: number
-    memberIds: number[]
+    teamLeadId?: string
+    memberIds: string[]
     designDoc: DesignDoc
     tasks: TaskInput[]
 }
