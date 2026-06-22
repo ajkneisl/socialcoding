@@ -1,43 +1,50 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { authApi } from '../features/auth/api'
 import GoogleSignIn from '../features/auth/GoogleSignIn'
-import { useUpdateProfile } from '../features/auth/queries'
-import { useMyProjects } from '../features/projects/queries'
+import { projectsApi } from '../features/projects/api'
+import type { Project } from '../features/projects/types'
 import { ProjectCard } from '../features/projects/ProjectCard'
 import { useAuth } from '../auth-context'
 import { Avatar } from '../components/Avatar'
 import { Button, LinkButton } from '../components/Button'
+import { Switch } from '../components/Switch'
 import { FormError } from '../components/FormError'
 import { NoticeCard } from '../components/NoticeCard'
 import { PageMessage } from '../components/PageMessage'
 import { card, page } from '../components/styles'
 
 function ProfileForm() {
-    const { user } = useAuth()
-    const updateProfile = useUpdateProfile()
+    const { user, token, refreshUser } = useAuth()
     const [joinedTerm, setJoinedTerm] = useState(user?.joinedTerm ?? '')
     const [gradYear, setGradYear] = useState(user?.gradYear ? String(user.gradYear) : '')
     const [github, setGithub] = useState(user?.github ?? '')
     const [linkedin, setLinkedin] = useState(user?.linkedin ?? '')
     const [website, setWebsite] = useState(user?.website ?? '')
     const [company, setCompany] = useState(user?.company ?? '')
+    const [listed, setListed] = useState(user?.listed ?? true)
     const [saved, setSaved] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     async function submit(e: FormEvent) {
         e.preventDefault()
+        if (!token) return
+        setError(null)
         setSaved(false)
         try {
-            await updateProfile.mutateAsync({
+            await authApi.updateProfile(token, {
                 joinedTerm: joinedTerm || null,
                 gradYear: gradYear ? Number(gradYear) : null,
                 github: github || null,
                 linkedin: linkedin || null,
                 website: website || null,
                 company: company || null,
+                listed,
             })
+            await refreshUser()
             setSaved(true)
-        } catch {
-            // error surfaced via updateProfile.error below
+        } catch (err) {
+            setError((err as Error).message)
         }
     }
 
@@ -105,9 +112,15 @@ function ProfileForm() {
                     />
                 </label>
             </div>
-            <FormError error={updateProfile.error?.message} />
+            <Switch
+                checked={listed}
+                onChange={setListed}
+                label="Show up on member list"
+                description="When on, your profile appears on the public People page."
+            />
+            <FormError error={error} />
             {saved && <p className="m-0 text-green-400">Profile saved.</p>}
-            <Button variant="ghost" type="submit" className="self-start">
+            <Button variant="primary" type="submit" className="self-start">
                 Save profile
             </Button>
         </form>
@@ -115,9 +128,18 @@ function ProfileForm() {
 }
 
 export default function Account() {
-    const { user, loading, logout } = useAuth()
-    const { data: myProjects = [] } = useMyProjects()
+    const { user, token, loading, logout } = useAuth()
+    const [myProjects, setMyProjects] = useState<Project[]>([])
     const [loginError, setLoginError] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (token && user) {
+            projectsApi
+                .mine(token)
+                .then(setMyProjects)
+                .catch(() => setMyProjects([]))
+        }
+    }, [token, user])
 
     const onLoginError = useCallback((message: string) => setLoginError(message), [])
 
