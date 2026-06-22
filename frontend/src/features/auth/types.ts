@@ -1,7 +1,7 @@
 export type Role = 'MEMBER' | 'BOARD'
 
 export interface User {
-    id: number
+    id: string
     email: string
     name: string
     role: Role

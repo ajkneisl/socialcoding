@@ -3,6 +3,7 @@ package com.socialcoding.projects
 import com.socialcoding.db.ProjectMember
 import com.socialcoding.db.ProjectMembers
 import com.socialcoding.db.Users
+import kotlin.uuid.Uuid
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.eq
@@ -31,7 +32,7 @@ fun projectsWithOwners() =
     Projects.join(Users, JoinType.INNER, Projects.ownerId, Users.id).selectAll()
 
 /** Must be inside a transaction. */
-fun memberIdsOf(projectId: Long): List<Long> =
+fun memberIdsOf(projectId: Uuid): List<Uuid> =
     ProjectMembers.selectAll()
         .where { ProjectMembers.projectID eq projectId }
         .map { it[ProjectMembers.userID] }
@@ -50,13 +51,16 @@ fun withRequiredMilestones(tasks: List<TaskInput>): List<TaskInput> {
  * Replaces a project's deliverables. Dependencies in [tasks] reference indices into the submitted
  * list and are translated to row ids once everything is inserted. Must be inside a transaction.
  */
-fun replaceTasks(projectId: Long, tasks: List<TaskInput>, teamIds: Set<Long>) {
+fun replaceTasks(projectId: Uuid, tasks: List<TaskInput>, teamIds: Set<Uuid>) {
     ProjectTasks.deleteWhere { ProjectTasks.projectID eq projectId }
     val newIds = tasks.map { task ->
         ProjectTasks.insert {
             it[ProjectTasks.projectID] = projectId
             it[name] = task.name.trim().take(300)
-            it[assigneeIDs] = task.assigneeIds.filter { id -> id in teamIds }.joinToString(",")
+            it[assigneeIDs] =
+                task.assigneeIds.mapNotNull { id -> id.toUuidOrNull() }
+                    .filter { id -> id in teamIds }
+                    .joinToString(",")
             it[dueDate] = task.dueDate.trim().take(10)
             it[milestone] = task.milestone
         } get ProjectTasks.id
@@ -72,7 +76,7 @@ fun replaceTasks(projectId: Long, tasks: List<TaskInput>, teamIds: Set<Long>) {
 }
 
 /** Every project [userId] owns, leads, or is a member of, regardless of status. */
-fun projectsForUser(userId: Long): List<Project> = transaction {
+fun projectsForUser(userId: Uuid): List<Project> = transaction {
     val memberOf =
         ProjectMembers.selectAll()
             .where { ProjectMembers.userID eq userId }
@@ -96,11 +100,11 @@ fun listApprovedProjects(): List<Project> = transaction {
 }
 
 /** Loads [ProjectMember]s for the given user ids, ordered by name. Must be inside a transaction. */
-fun membersByIds(ids: Collection<Long>): List<ProjectMember> =
+fun membersByIds(ids: Collection<Uuid>): List<ProjectMember> =
     Users.selectAll()
         .where { Users.id inList ids.distinct() }
         .orderBy(Users.name)
-        .map { ProjectMember(it[Users.id], it[Users.name], it[Users.avatarUrl]) }
+        .map { ProjectMember(it[Users.id].toString(), it[Users.name], it[Users.avatarUrl]) }
 
 /** Every pending project paired with its team, for the board review queue. */
 fun pendingProjects(): List<PendingProject> = transaction {
@@ -110,6 +114,10 @@ fun pendingProjects(): List<PendingProject> = transaction {
         .map { row ->
             val project = row.toProject()
             val leadID = row[Projects.teamLeadId] ?: row[Projects.ownerId]
-            PendingProject(project, leadID, membersByIds(memberIdsOf(project.id) + leadID))
+            PendingProject(
+                project,
+                leadID.toString(),
+                membersByIds(memberIdsOf(row[Projects.id]) + leadID),
+            )
         }
 }

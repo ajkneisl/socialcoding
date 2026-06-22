@@ -21,7 +21,7 @@ export const updateProjectDesign = (
 export const updateProjectMembers = (
     token: string,
     id: number,
-    body: { memberIds: number[]; teamLeadId: number },
+    body: { memberIds: string[]; teamLeadId: string },
 ) => request<ProjectDetail>(`/api/projects/${id}/members`, { method: 'PUT', body, token })
 
 export const updateProjectTasks = (token: string, id: number, tasks: TaskInput[]) =>

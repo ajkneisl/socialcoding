@@ -6,7 +6,7 @@ import org.jetbrains.exposed.v1.core.Table
 
 object ProjectTasks : Table("project_tasks") {
     val id = long("id").autoIncrement()
-    val projectID = long("project_id").references(Projects.id)
+    val projectID = uuid("project_id").references(Projects.id)
     val name = varchar("name", 300)
     val assigneeIDs = varchar("assignee_ids", 1000).default("")
     val dueDate = varchar("due_date", 10).default("")
@@ -21,7 +21,7 @@ object ProjectTasks : Table("project_tasks") {
 data class ProjectTask(
     val id: Long,
     val name: String,
-    val assigneeIds: List<Long>,
+    val assigneeIds: List<String>,
     val dueDate: String,
     val dependsOn: List<Long>,
     val milestone: Boolean,
@@ -31,7 +31,7 @@ fun ResultRow.toTask() =
     ProjectTask(
         id = this[ProjectTasks.id],
         name = this[ProjectTasks.name],
-        assigneeIds = this[ProjectTasks.assigneeIDs].toIDList(),
+        assigneeIds = this[ProjectTasks.assigneeIDs].toUserIdList().map { it.toString() },
         dueDate = this[ProjectTasks.dueDate],
         dependsOn = this[ProjectTasks.dependsOnIDs].toIDList(),
         milestone = this[ProjectTasks.milestone],

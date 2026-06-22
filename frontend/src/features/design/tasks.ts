@@ -2,7 +2,7 @@ import type { ProjectTask } from '../projects/types'
 
 export interface EditableTask {
     name: string
-    assigneeIds: number[]
+    assigneeIds: string[]
     dueDate: string
     /** Indices into the task list. */
     dependsOn: number[]

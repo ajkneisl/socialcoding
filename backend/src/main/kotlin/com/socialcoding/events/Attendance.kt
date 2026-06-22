@@ -1,6 +1,7 @@
 package com.socialcoding.events
 
 import com.socialcoding.db.Users
+import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
@@ -18,17 +19,12 @@ const val ATTENDANCE_OPENS_MS = -60 * 60 * 1000L // 1 hour before
 const val ATTENDANCE_CLOSES_MS = 2 * 60 * 60 * 1000L // 2 hours after
 
 object EventAttendance : Table("event_attendance") {
-    val id = long("id").autoIncrement()
     val eventID = long("event_id").references(Events.id)
-    val userID = long("user_id").references(Users.id)
+    val userID = uuid("user_id").references(Users.id)
     val recordedAt = long("recorded_at")
 
-    override val primaryKey = PrimaryKey(id)
-
-    init {
-        // A user may only be counted once per event.
-        uniqueIndex(eventID, userID)
-    }
+    // A user may only be counted once per event, so the pair is the primary key.
+    override val primaryKey = PrimaryKey(eventID, userID)
 }
 
 /** A single attendee of an event, for the board export. */
@@ -51,7 +47,7 @@ enum class AttendOutcome {
 }
 
 /** Records the user's attendance for an event, idempotently. Must be within the window. */
-fun recordAttendance(eventID: Long, userID: Long): AttendOutcome = transaction {
+fun recordAttendance(eventID: Long, userID: Uuid): AttendOutcome = transaction {
     val already =
         EventAttendance.selectAll()
             .where { (EventAttendance.eventID eq eventID) and (EventAttendance.userID eq userID) }

@@ -3,6 +3,7 @@ package com.socialcoding.projects
 import com.socialcoding.db.ProjectMember
 import com.socialcoding.db.Role
 import com.socialcoding.db.Users
+import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Table
@@ -11,19 +12,19 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object Projects : Table("projects") {
-    val id = long("id").autoIncrement()
+    val id = uuid("id").clientDefault { Uuid.random() }
     val title = varchar("title", 200)
     val description = text("description")
     val active = bool("active").default(true)
     val repoUrl = varchar("repo_url", 512).nullable()
     val siteUrl = varchar("site_url", 512).nullable()
-    val ownerId = long("owner_id").references(Users.id)
-    val teamLeadId = long("team_lead_id").references(Users.id).nullable()
+    val ownerId = uuid("owner_id").references(Users.id)
+    val teamLeadId = uuid("team_lead_id").references(Users.id).nullable()
     val designDoc = text("design_doc").nullable()
     val status =
         enumerationByName("status", 16, ProjectStatus::class).default(ProjectStatus.PENDING)
     val submittedAt = long("submitted_at")
-    val reviewedBy = long("reviewed_by").references(Users.id).nullable()
+    val reviewedBy = uuid("reviewed_by").references(Users.id).nullable()
     val reviewNote = varchar("review_note", 1000).nullable()
 
     override val primaryKey = PrimaryKey(id)
@@ -50,7 +51,7 @@ enum class ProjectStatus {
  */
 @Serializable
 data class Project(
-    val id: Long,
+    val id: String,
     val title: String,
     val description: String,
     val repoUrl: String?,
@@ -64,7 +65,7 @@ data class Project(
 /** Convert a [ResultRow] into a [Project]. */
 fun ResultRow.toProject() =
     Project(
-        id = this[Projects.id],
+        id = this[Projects.id].toString(),
         title = this[Projects.title],
         description = this[Projects.description],
         active = this[Projects.active],
@@ -90,7 +91,7 @@ fun ResultRow.toProject() =
 data class ProjectDetail(
     val project: Project,
     val designDoc: DesignDocContent,
-    val teamLeadID: Long,
+    val teamLeadID: String,
     val members: List<ProjectMember>,
     val tasks: List<ProjectTask>,
     val canEdit: Boolean,
@@ -104,7 +105,7 @@ data class ProjectDetail(
          * @param userID The ID of the user requesting.
          * @param role The role of [userID].
          */
-        fun from(projectID: Long, userID: Long, role: Role): ProjectDetail? = transaction {
+        fun from(projectID: Uuid, userID: Uuid, role: Role): ProjectDetail? = transaction {
             val row =
                 projectsWithOwners().where { Projects.id eq projectID }.firstOrNull()
                     ?: return@transaction null
@@ -128,7 +129,7 @@ data class ProjectDetail(
             ProjectDetail(
                 project = row.toProject(),
                 designDoc = decodeDesignDoc(row[Projects.designDoc]),
-                teamLeadID = leadId,
+                teamLeadID = leadId.toString(),
                 members = members,
                 tasks = tasks,
                 canEdit = onTeam || isBoard,
@@ -148,7 +149,7 @@ data class ProjectDetail(
 @Serializable
 data class PendingProject(
     val project: Project,
-    val teamLeadID: Long,
+    val teamLeadID: String,
     val members: List<ProjectMember>,
 )
 
