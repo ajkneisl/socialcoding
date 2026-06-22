@@ -54,7 +54,7 @@ export default function Layout() {
                     <div className="flex items-center gap-[0.6rem] max-md:flex-1 max-md:justify-end">
                         <AnchorButton
                             variant="ghost"
-                            href="https://discord.gg/social-coding"
+                            href="https://discord.gg/5GGURYZPpp"
                             target="_blank"
                             rel="noreferrer"
                             className="max-md:hidden"
@@ -96,7 +96,7 @@ export default function Layout() {
                             {navLinks}
                             <AnchorButton
                                 variant="ghost"
-                                href="https://discord.gg/social-coding"
+                                href="https://discord.gg/5GGURYZPpp"
                                 target="_blank"
                                 rel="noreferrer"
                                 className="mt-2 self-start"
