@@ -102,7 +102,7 @@ export default function Home() {
                         <div className="flex flex-wrap gap-[0.8rem]">
                             <AnchorButton
                                 lg
-                                href="https://discord.gg/social-coding"
+                                href="https://discord.gg/5GGURYZPpp"
                                 target="_blank"
                                 rel="noreferrer"
                             >
