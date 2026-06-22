@@ -18,7 +18,7 @@
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 
-    --animate-marquee: marquee 28s linear infinite;
+    --animate-marquee: marquee 54s linear infinite;
 
     @keyframes marquee {
         to {
