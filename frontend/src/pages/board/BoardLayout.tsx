@@ -42,6 +42,9 @@ export default function BoardLayout() {
                 <NavLink to="/board/events" className={tabClass}>
                     Events
                 </NavLink>
+                <NavLink to="/board/analytics" className={tabClass}>
+                    Analytics
+                </NavLink>
             </nav>
 
             <Outlet />

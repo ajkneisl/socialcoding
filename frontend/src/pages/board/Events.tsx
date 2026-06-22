@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AttendancePanel } from '../../features/events/AttendancePanel'
 import {
     useCreateEvent,
     useDeleteEvent,
@@ -25,6 +26,63 @@ const emptyEvent = {
     location: '',
     burrowUrl: '',
     imageUrl: '',
+    attendance: false,
+}
+
+function PublishedRow({
+    event,
+    busy,
+    deleting,
+    onEdit,
+    onDelete,
+}: {
+    event: Event
+    busy: boolean
+    deleting: boolean
+    onEdit: () => void
+    onDelete: () => void
+}) {
+    const [showAttendance, setShowAttendance] = useState(false)
+
+    return (
+        <div>
+            <article className={`${row} flex flex-wrap items-center justify-between gap-4`}>
+                <div className="min-w-0">
+                    <h3 className="m-0 text-base">
+                        <Link
+                            to={`/events/${event.id}`}
+                            className="text-text hover:text-gold hover:no-underline"
+                        >
+                            {event.title}
+                        </Link>
+                    </h3>
+                    <p className="mb-0 mt-[0.1rem] font-mono text-[0.8rem] text-text-soft">
+                        {new Date(event.startsAt).toLocaleString()}
+                        {event.location && <> · {event.location}</>}
+                        {event.attendance && <> · attendance on</>}
+                    </p>
+                </div>
+                <div className="flex gap-[0.6rem]">
+                    {event.attendance && (
+                        <Button variant="ghost" onClick={() => setShowAttendance((s) => !s)}>
+                            {showAttendance ? 'Hide' : 'Attendance'}
+                        </Button>
+                    )}
+                    <Button variant="ghost" disabled={busy} onClick={onEdit}>
+                        Edit
+                    </Button>
+                    <Button variant="danger" disabled={deleting} onClick={onDelete}>
+                        Delete
+                    </Button>
+                </div>
+            </article>
+            {event.attendance && showAttendance && (
+                <div className="px-1 pb-5">
+                    <AttendancePanel event={event} />
+                </div>
+            )}
+        </div>
+    )
 }
 
 /** Epoch ms → the local "YYYY-MM-DDTHH:mm" string a datetime-local input expects. */
@@ -48,7 +106,7 @@ export default function BoardEvents() {
 
     const { page, setPage, pageCount, pageItems } = usePaged(events, PAGE_SIZE)
 
-    function set<K extends keyof typeof form>(key: K, value: string) {
+    function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
         setForm((f) => ({ ...f, [key]: value }))
     }
 
@@ -67,6 +125,7 @@ export default function BoardEvents() {
             location: event.location ?? '',
             burrowUrl: event.burrowUrl ?? '',
             imageUrl: event.imageUrl ?? '',
+            attendance: event.attendance,
         })
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
@@ -81,6 +140,7 @@ export default function BoardEvents() {
             location: form.location || undefined,
             burrowUrl: form.burrowUrl || undefined,
             imageUrl: form.imageUrl || undefined,
+            attendance: form.attendance,
         }
         if (editingId != null) {
             updateEvent.mutate({ id: editingId, event: payload }, { onSuccess: reset })
@@ -169,6 +229,18 @@ export default function BoardEvents() {
                             placeholder="https://…/poster.png"
                         />
                     </label>
+                    <label className="flex-row items-center gap-2">
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 cursor-pointer accent-gold p-0"
+                            checked={form.attendance}
+                            onChange={(e) => set('attendance', e.target.checked)}
+                        />
+                        Track attendance{' '}
+                        <span className="text-text-soft">
+                            (adds a QR check-in, open 1 hour before to 2 hours after the start)
+                        </span>
+                    </label>
                     <FormError error={error} />
                     <div className="flex gap-[0.6rem]">
                         <Button disabled={!valid || busy} onClick={submit}>
@@ -188,41 +260,14 @@ export default function BoardEvents() {
                     <SectionHead title="Published events" className="mt-14" />
                     <div className="border-t border-line">
                         {pageItems.map((event) => (
-                            <article
+                            <PublishedRow
                                 key={event.id}
-                                className={`${row} flex flex-wrap items-center justify-between gap-4`}
-                            >
-                                <div className="min-w-0">
-                                    <h3 className="m-0 text-base">
-                                        <Link
-                                            to={`/events/${event.id}`}
-                                            className="text-text hover:text-gold hover:no-underline"
-                                        >
-                                            {event.title}
-                                        </Link>
-                                    </h3>
-                                    <p className="mb-0 mt-[0.1rem] font-mono text-[0.8rem] text-text-soft">
-                                        {new Date(event.startsAt).toLocaleString()}
-                                        {event.location && <> · {event.location}</>}
-                                    </p>
-                                </div>
-                                <div className="flex gap-[0.6rem]">
-                                    <Button
-                                        variant="ghost"
-                                        disabled={busy}
-                                        onClick={() => startEdit(event)}
-                                    >
-                                        Edit
-                                    </Button>
-                                    <Button
-                                        variant="danger"
-                                        disabled={deleteEvent.isPending}
-                                        onClick={() => deleteEvent.mutate(event.id)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </div>
-                            </article>
+                                event={event}
+                                busy={busy}
+                                deleting={deleteEvent.isPending}
+                                onEdit={() => startEdit(event)}
+                                onDelete={() => deleteEvent.mutate(event.id)}
+                            />
                         ))}
                     </div>
                     <Pagination page={page} pageCount={pageCount} onChange={setPage} />

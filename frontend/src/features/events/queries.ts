@@ -1,10 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth-context'
-import { createEvent, deleteEvent, listEvents, updateEvent } from './api'
+import {
+    attendEvent,
+    createEvent,
+    deleteEvent,
+    getAttendanceAnalytics,
+    listAttendees,
+    listEvents,
+    updateEvent,
+} from './api'
 import type { CreateEventRequest } from './types'
 
 export const eventKeys = {
     all: ['events'] as const,
+    analytics: ['events', 'analytics'] as const,
 }
 
 export function useEvents() {
@@ -54,5 +63,30 @@ export function useDeleteEvent() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: eventKeys.all })
         },
+    })
+}
+
+export function useAttendEvent() {
+    const { token } = useAuth()
+    return useMutation({
+        mutationFn: (id: number) => attendEvent(token!, id),
+    })
+}
+
+export function useAttendees(id: number, enabled: boolean) {
+    const { token } = useAuth()
+    return useQuery({
+        queryKey: [...eventKeys.all, id, 'attendees'],
+        queryFn: () => listAttendees(token!, id),
+        enabled: enabled && !!token,
+    })
+}
+
+export function useAttendanceAnalytics() {
+    const { user, token } = useAuth()
+    return useQuery({
+        queryKey: eventKeys.analytics,
+        queryFn: () => getAttendanceAnalytics(token!),
+        enabled: !!token && user?.role === 'BOARD',
     })
 }

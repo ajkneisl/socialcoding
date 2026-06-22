@@ -4,13 +4,14 @@ import com.socialcoding.auth.Auth
 import com.socialcoding.auth.authRoutes
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.ApiError
+import com.socialcoding.db.ProjectMembers
+import com.socialcoding.db.Users
+import com.socialcoding.events.EventAttendance
 import com.socialcoding.events.Events
 import com.socialcoding.events.eventRoutes
-import com.socialcoding.db.ProjectMembers
+import com.socialcoding.people.peopleRoutes
 import com.socialcoding.projects.ProjectTasks
 import com.socialcoding.projects.Projects
-import com.socialcoding.db.Users
-import com.socialcoding.people.peopleRoutes
 import com.socialcoding.projects.projectRoutes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -48,16 +49,13 @@ fun main() {
 fun initDb() {
     Database.connect(
         Environment.getVariable("DB_URL"),
-        driver =
-            when {
-                Environment.isProduction -> "org.postgresql.Driver"
-                else -> "org.h2.Driver"
-            },
         user = Environment.getVariable("DB_USER"),
         password = Environment.getVariable("DB_PASS"),
     )
 
-    transaction { SchemaUtils.create(Users, Projects, ProjectMembers, ProjectTasks, Events) }
+    transaction {
+        SchemaUtils.create(Users, Projects, ProjectMembers, ProjectTasks, Events, EventAttendance)
+    }
 }
 
 /** Ktor root module. */
