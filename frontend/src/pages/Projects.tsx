@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { projectsApi } from '../features/projects/api'
+import { listProjects } from '../features/projects/api'
 import type { Project } from '../features/projects/types'
 import { ProjectCard } from '../features/projects/ProjectCard'
 import { FormError } from '../components/FormError'
@@ -14,8 +14,7 @@ export default function Projects() {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        projectsApi
-            .list()
+        listProjects()
             .then(setProjects)
             .catch((e: Error) => setError(e.message))
     }, [])

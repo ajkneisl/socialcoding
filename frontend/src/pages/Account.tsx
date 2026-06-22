@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { authApi } from '../features/auth/api'
 import GoogleSignIn from '../features/auth/GoogleSignIn'
-import { projectsApi } from '../features/projects/api'
+import { listMyProjects } from '../features/projects/api'
 import type { Project } from '../features/projects/types'
 import { ProjectCard } from '../features/projects/ProjectCard'
 import { useAuth } from '../auth-context'
@@ -134,8 +134,7 @@ export default function Account() {
 
     useEffect(() => {
         if (token && user) {
-            projectsApi
-                .mine(token)
+            listMyProjects(token)
                 .then(setMyProjects)
                 .catch(() => setMyProjects([]))
         }
