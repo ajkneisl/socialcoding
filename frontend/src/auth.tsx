@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getCurrentUser, loginWithGoogle } from './features/auth/api'
+import { authApi } from './features/auth/api'
 import { AuthContext, TOKEN_KEY, meKey } from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -12,7 +12,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // A token the server rejects is no longer useful — drop it on failure.
         queryFn: async () => {
             try {
-                return await getCurrentUser(token!)
+                return await authApi.me(token!)
             } catch (err) {
                 localStorage.removeItem(TOKEN_KEY)
                 setToken(null)
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const loginWithCredential = useCallback(
         async (credential: string) => {
-            const res = await loginWithGoogle(credential)
+            const res = await authApi.loginWithGoogle(credential)
             localStorage.setItem(TOKEN_KEY, res.token)
             setToken(res.token)
             queryClient.setQueryData(meKey, res.user)

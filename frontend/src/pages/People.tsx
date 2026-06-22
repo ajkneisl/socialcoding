@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { peopleApi } from '../features/people/api'
+import { listPeople } from '../features/people/api'
 import type { Person } from '../features/people/types'
 import { PersonCard } from '../features/people/PersonCard'
 import { useAuth } from '../auth-context'
@@ -16,8 +16,7 @@ export default function People() {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        peopleApi
-            .list()
+        listPeople()
             .then(setPeople)
             .catch((e: Error) => setError(e.message))
     }, [])

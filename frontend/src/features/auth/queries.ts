@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth, meKey } from '../../auth-context'
-import { updateProfile } from './api'
+import { authApi } from './api'
 
 type ProfileUpdate = {
     joinedTerm?: string | null
@@ -18,7 +18,7 @@ export function useUpdateProfile() {
     const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: (profile: ProfileUpdate) => updateProfile(token!, profile),
+        mutationFn: (profile: ProfileUpdate) => authApi.updateProfile(token!, profile),
         onSuccess: (user) => {
             queryClient.setQueryData(meKey, user)
         },
