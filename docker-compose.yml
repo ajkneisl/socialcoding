@@ -18,10 +18,9 @@ services:
     backend:
         image: backend:${VERSION:-latest}
         environment:
-            DATABASE_URL: jdbc:postgresql://db:5432/socialcoding
-            DATABASE_DRIVER: org.postgresql.Driver
-            DATABASE_USER: socialcoding
-            DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-socialcoding}
+            DB_URL: jdbc:postgresql://db:5432/socialcoding
+            DB_USER: socialcoding
+            DB_PASS: ${POSTGRES_PASSWORD:-socialcoding}
             JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
             GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
             BOARD_EMAILS: ${BOARD_EMAILS:-}

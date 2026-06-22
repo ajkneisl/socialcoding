@@ -54,7 +54,7 @@ fun initDb() {
     )
 
     transaction {
-        SchemaUtils.create(Users, Projects, ProjectMembers, ProjectTasks, Events, EventAttendance)
+        SchemaUtils.createMissingTablesAndColumns(Users, Projects, ProjectMembers, ProjectTasks, Events, EventAttendance)
     }
 }
 
