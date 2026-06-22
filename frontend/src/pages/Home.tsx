@@ -111,7 +111,7 @@ export default function Home() {
                             <AnchorButton
                                 variant="ghost"
                                 lg
-                                href="https://github.com/social-coding-umn"
+                                href="https://github.umn.edu/Minnesota-Social-Coding"
                                 target="_blank"
                                 rel="noreferrer"
                             >
