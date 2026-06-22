@@ -19,6 +19,7 @@ object Events : Table("events") {
     val location = varchar("location", 255).nullable()
     val burrowUrl = varchar("burrow_url", 512).nullable()
     val imageUrl = varchar("image_url", 512).nullable()
+    val attendance = bool("attendance").default(false)
     val createdBy = long("created_by").references(Users.id)
     val createdAt = long("created_at")
 
@@ -36,6 +37,7 @@ object Events : Table("events") {
  * @param location The optional location.
  * @param burrowUrl The optional external Burrow link for the event.
  * @param imageUrl The optional promotional image.
+ * @param attendance Whether attendance tracking is enabled for this event.
  * @param authorName The name of the board member who posted it.
  * @param createdAt When the event was posted, in epoch ms.
  */
@@ -49,6 +51,7 @@ data class Event(
     val location: String?,
     val burrowUrl: String?,
     val imageUrl: String?,
+    val attendance: Boolean,
     val authorName: String,
     val createdAt: Long,
 )
@@ -64,6 +67,7 @@ fun ResultRow.toEvent() =
         location = this[Events.location],
         burrowUrl = this[Events.burrowUrl],
         imageUrl = this[Events.imageUrl],
+        attendance = this[Events.attendance],
         authorName = this[Users.name],
         createdAt = this[Events.createdAt],
     )

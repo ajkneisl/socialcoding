@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { useEvent } from '../features/events/queries'
-import { AnchorButton } from '../components/Button'
+import { AnchorButton, LinkButton } from '../components/Button'
 import { ExternalLinkIcon } from '../components/ExternalLinkIcon'
 import { Markdown } from '../components/Markdown'
 import { PageMessage } from '../components/PageMessage'
@@ -65,12 +65,22 @@ export default function EventDetail() {
 
                 {event.body && <Markdown className="mt-4 max-w-[70ch]">{event.body}</Markdown>}
 
-                {event.burrowUrl && (
-                    <div className="mt-8">
-                        <AnchorButton href={event.burrowUrl} target="_blank" rel="noreferrer">
-                            View Event on Burrow
-                            <ExternalLinkIcon />
-                        </AnchorButton>
+                {(event.burrowUrl || event.attendance) && (
+                    <div className="mt-8 flex flex-wrap gap-3">
+                        {event.attendance && (
+                            <LinkButton to={`/events/${event.id}/attend`}>Check in</LinkButton>
+                        )}
+                        {event.burrowUrl && (
+                            <AnchorButton
+                                variant={event.attendance ? 'ghost' : 'primary'}
+                                href={event.burrowUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                View Event on Burrow
+                                <ExternalLinkIcon />
+                            </AnchorButton>
+                        )}
                     </div>
                 )}
 

@@ -12,6 +12,7 @@ declare global {
                         callback: (response: { credential: string }) => void
                     }) => void
                     renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void
+                    prompt: () => void
                 }
             }
         }
@@ -35,7 +36,14 @@ function loadGsiScript(): Promise<void> {
     })
 }
 
-export default function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
+export default function GoogleSignIn({
+    onError,
+    autoPrompt = false,
+}: {
+    onError: (message: string) => void
+    /** Immediately surface Google's One Tap prompt in addition to the button. */
+    autoPrompt?: boolean
+}) {
     const { loginWithCredential } = useAuth()
     const buttonRef = useRef<HTMLDivElement>(null)
     const unconfigured = !GOOGLE_CLIENT_ID
@@ -61,12 +69,13 @@ export default function GoogleSignIn({ onError }: { onError: (message: string) =
                     shape: 'pill',
                     width: 280,
                 })
+                if (autoPrompt) window.google.accounts.id.prompt()
             })
             .catch((err: Error) => onError(err.message))
         return () => {
             cancelled = true
         }
-    }, [loginWithCredential, onError])
+    }, [loginWithCredential, onError, autoPrompt])
 
     if (unconfigured) {
         return <p className="text-text-soft">There's an issue.</p>

@@ -8,7 +8,7 @@ group = "com.socialcoding"
 
 version = "1.0.0-SNAPSHOT"
 
-application { mainClass = "com.socialcoding.MainKt" }
+application { mainClass = "com.socialcoding.ApplicationKt" }
 
 kotlin { jvmToolchain(21) }
 
