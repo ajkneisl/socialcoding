@@ -242,7 +242,7 @@ export default function Home() {
                         <Eyebrow>Projects</Eyebrow>
                         <h2>Currently active</h2>
                     </div>
-                    <LinkButton variant="ghost" to="/account">
+                    <LinkButton variant="ghost" to="/projects/new">
                         Pitch your own →
                     </LinkButton>
                 </div>
@@ -262,7 +262,7 @@ export default function Home() {
                             building.
                         </p>
                     </div>
-                    <LinkButton lg to="/account">
+                    <LinkButton lg to="/projects/new">
                         Create a project
                     </LinkButton>
                 </div>
