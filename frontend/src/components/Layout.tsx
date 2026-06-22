@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { AnchorButton, LinkButton } from './Button'
+import { Avatar } from './Avatar'
 import { container } from './styles'
 
 function Logo() {
@@ -61,9 +62,17 @@ export default function Layout() {
                         >
                             Discord
                         </AnchorButton>
-                        <LinkButton to="/account">
-                            {user ? user.name.split(' ')[0] : 'Sign in'}
-                        </LinkButton>
+                        {user ? (
+                            <Link
+                                to="/account"
+                                aria-label="Account"
+                                className="hover:no-underline"
+                            >
+                                <Avatar name={user.name} avatarUrl={user.avatarUrl} size="sm" />
+                            </Link>
+                        ) : (
+                            <LinkButton to="/account">Sign in</LinkButton>
+                        )}
                         <button
                             type="button"
                             className="hidden cursor-pointer items-center justify-center rounded-lg border border-line p-2 text-text hover:bg-bg-raised max-md:inline-flex"
