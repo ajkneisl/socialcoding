@@ -9,6 +9,24 @@ import { FormError } from '../components/FormError'
 import { SectionHead } from '../components/SectionHead'
 import { page } from '../components/styles'
 
+const BOARD_ORDER = [
+    'President',
+    'Vice President',
+    'Treasurer',
+    'Vice Treasurer',
+    'Events',
+    'Communications',
+    'Relations',
+    'Recruitment',
+]
+
+const memberGrid = 'grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[1.1rem]'
+
+function boardRank(person: Person) {
+    const i = BOARD_ORDER.indexOf(person.title ?? '')
+    return i === -1 ? BOARD_ORDER.length : i
+}
+
 export default function People() {
     const { user } = useAuth()
     const [people, setPeople] = useState<Person[]>([])
@@ -41,6 +59,16 @@ export default function People() {
                 String(p.gradYear ?? '').includes(q),
         )
     }, [people, query])
+
+    const boardMembers = useMemo(
+        () =>
+            filtered
+                .filter((p) => p.role === 'BOARD')
+                .sort((a, b) => boardRank(a) - boardRank(b) || a.name.localeCompare(b.name)),
+        [filtered],
+    )
+
+    const otherMembers = useMemo(() => filtered.filter((p) => p.role !== 'BOARD'), [filtered])
 
     return (
         <section className={page}>
@@ -90,11 +118,26 @@ export default function People() {
 
             <FormError error={error} />
 
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[1.1rem]">
-                {filtered.map((p) => (
-                    <PersonCard key={p.id} person={p} />
-                ))}
-            </div>
+            {boardMembers.length > 0 && (
+                <div className="mb-10">
+                    <h3 className="mb-3 text-[1.05rem]">Board</h3>
+                    <div className={memberGrid}>
+                        {boardMembers.map((p) => (
+                            <PersonCard key={p.id} person={p} />
+                        ))}
+                    </div>
+                </div>
+            )}
+            {otherMembers.length > 0 && (
+                <div>
+                    {boardMembers.length > 0 && <h3 className="mb-3 text-[1.05rem]">Members</h3>}
+                    <div className={memberGrid}>
+                        {otherMembers.map((p) => (
+                            <PersonCard key={p.id} person={p} />
+                        ))}
+                    </div>
+                </div>
+            )}
             {!error && filtered.length === 0 && (
                 <p className="text-text-soft">No members listed.</p>
             )}
