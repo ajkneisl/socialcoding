@@ -152,7 +152,7 @@ export default function Layout() {
                             coding@umn.edu
                         </a>
                         <a
-                            href="https://github.com/social-coding-umn"
+                            href="https://github.umn.edu/Minnesota-Social-Coding"
                             target="_blank"
                             rel="noreferrer"
                             className="text-text-soft hover:text-gold"
