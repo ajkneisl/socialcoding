@@ -3,7 +3,7 @@ import { Avatar } from '../components/Avatar'
 import { Badge } from '../components/Badge'
 import { Eyebrow } from '../components/Eyebrow'
 import { FormError } from '../components/FormError'
-import { PageMessage } from '../components/PageMessage'
+import { Spinner } from '../components/Spinner'
 import { card, page } from '../components/styles'
 import { LikeButton } from '../features/projects/LikeButton'
 import { ActiveBadge } from '../features/projects/StatusBadge'
@@ -17,7 +17,11 @@ export default function ProjectShowcase() {
     const { data: showcase, error, isLoading } = useProjectShowcase(id ?? '')
 
     if (isLoading) {
-        return <PageMessage>Loading…</PageMessage>
+        return (
+            <section className={`${page} flex justify-center`}>
+                <Spinner className="mt-12 h-8 w-8" />
+            </section>
+        )
     }
 
     if (error || !showcase) {
