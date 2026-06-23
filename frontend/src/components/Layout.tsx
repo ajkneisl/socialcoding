@@ -124,7 +124,7 @@ export default function Layout() {
                             Minnesota Twin Cities. Everyone is welcome, no experience required.
                         </p>
                         <p className="m-0 max-w-[40ch] font-mono text-[0.8rem]">
-                            weekly meetings · Bruininks Hall 315
+                            Weekly Meetings · Bruininks Hall 312
                         </p>
                     </div>
                     <div className="flex flex-col items-start gap-[0.4rem]">
