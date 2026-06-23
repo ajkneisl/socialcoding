@@ -6,7 +6,7 @@ export const listPendingProjects = (token: string) =>
 
 export const reviewProject = (
     token: string,
-    id: number,
+    id: string,
     decision: 'approve' | 'reject' | 'activate' | 'deactivate',
     note?: string,
 ) =>

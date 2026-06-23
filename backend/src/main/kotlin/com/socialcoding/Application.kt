@@ -10,6 +10,7 @@ import com.socialcoding.events.EventAttendance
 import com.socialcoding.events.Events
 import com.socialcoding.events.eventRoutes
 import com.socialcoding.people.peopleRoutes
+import com.socialcoding.projects.ProjectLikes
 import com.socialcoding.projects.ProjectTasks
 import com.socialcoding.projects.Projects
 import com.socialcoding.projects.projectRoutes
@@ -54,7 +55,15 @@ fun initDb() {
     )
 
     transaction {
-        SchemaUtils.createMissingTablesAndColumns(Users, Projects, ProjectMembers, ProjectTasks, Events, EventAttendance)
+        SchemaUtils.createMissingTablesAndColumns(
+            Users,
+            Projects,
+            ProjectMembers,
+            ProjectTasks,
+            ProjectLikes,
+            Events,
+            EventAttendance,
+        )
     }
 }
 
@@ -85,6 +94,7 @@ fun Application.rootModule() {
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             call.application.log.error("Unhandled error", cause)
+            cause.printStackTrace()
             call.respond(HttpStatusCode.InternalServerError, ApiError("Something went wrong"))
         }
     }

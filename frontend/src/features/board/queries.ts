@@ -17,7 +17,7 @@ export function usePendingProjects() {
 }
 
 type ReviewVars = {
-    id: number
+    id: string
     decision: 'approve' | 'reject' | 'activate' | 'deactivate'
     note?: string
 }

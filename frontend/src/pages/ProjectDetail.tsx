@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useReviewProject } from '../features/board/queries'
 import { usePeople } from '../features/people/queries'
@@ -322,7 +322,7 @@ function DeliverablesSection({ detail }: { detail: Detail }) {
 export default function ProjectDetail() {
     const { id } = useParams()
     const { user, token, loading } = useAuth()
-    const projectId = useMemo(() => Number(id), [id])
+    const projectId = id ?? ''
     const { data: detail, error } = useProjectDetail(projectId)
     const { data: people = [] } = usePeople()
 

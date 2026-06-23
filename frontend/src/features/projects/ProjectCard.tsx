@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { card } from '../../components/styles'
+import { LikeButton } from './LikeButton'
 import { ActiveBadge, ReviewNote, StatusBadge } from './StatusBadge'
 import type { Project } from './types'
 
@@ -35,6 +36,7 @@ export function ProjectCard({
             </div>
             <p className="mb-3 mt-[0.45rem] text-text-soft">{project.description}</p>
             <div className="mt-auto flex items-center justify-between gap-3 pt-2 font-mono text-[0.8rem] text-text-faint">
+                {!showStatus && <LikeButton project={project} />}
                 <span>led by {project.ownerName}</span>
                 {project.siteUrl && (
                     <a href={project.siteUrl} target="_blank" rel="noreferrer" className={repoLink}>

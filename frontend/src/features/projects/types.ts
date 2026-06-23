@@ -3,7 +3,7 @@ import type { DesignDoc } from '../design/types'
 export type ProjectStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 export interface Project {
-    id: number
+    id: string
     title: string
     description: string
     longDescription: string | null
@@ -14,6 +14,14 @@ export interface Project {
     ownerName: string
     submittedAt: number
     reviewNote?: string | null
+    likes: number
+    liked: boolean
+}
+
+/** Result of toggling a heart on a project. */
+export interface LikeResult {
+    liked: boolean
+    likes: number
 }
 
 export interface ProjectTask {

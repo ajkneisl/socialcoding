@@ -48,6 +48,8 @@ enum class ProjectStatus {
  * @param active If the project is active.
  * @param submittedAt When the project was submitted in epoch ms.
  * @param reviewNote A note left by the board member who reviewed the project.
+ * @param likes How many users have hearted the project.
+ * @param liked Whether the requesting user has hearted the project.
  */
 @Serializable
 data class Project(
@@ -60,6 +62,8 @@ data class Project(
     val active: Boolean,
     val submittedAt: Long,
     val reviewNote: String? = null,
+    val likes: Long = 0,
+    val liked: Boolean = false,
 )
 
 /** Convert a [ResultRow] into a [Project]. */

@@ -2,6 +2,7 @@ package com.socialcoding.projects
 
 import com.socialcoding.auth.currentRole
 import com.socialcoding.auth.currentUserID
+import com.socialcoding.auth.optionalUserID
 import com.socialcoding.common.ApiError
 import com.socialcoding.common.InvalidAuthorization
 import com.socialcoding.common.NotFound
@@ -27,8 +28,10 @@ import org.jetbrains.exposed.v1.jdbc.update
 /** Public project listing plus the authenticated design doc lifecycle. */
 fun Route.projectRoutes() {
     // GET /api/projects
-    // list every approved project
-    get("/projects") { call.respond(listApprovedProjects()) }
+    // list every approved project, ordered by hearts; like state is filled in when signed in
+    authenticate("session", optional = true) {
+        get("/projects") { call.respond(listApprovedProjects(optionalUserID())) }
+    }
 
     authenticate("session") {
         /**
@@ -115,6 +118,16 @@ fun Route.projectRoutes() {
                     ?: throw NotFound("project")
 
             call.respond(detail)
+        }
+
+        // POST /api/projects/{id}/like
+        // toggle the signed-in user's heart on an approved project
+        post("/projects/{id}/like") {
+            val userID = currentUserID()
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
+            if (!approvedProjectExists(projectID)) throw NotFound("project")
+
+            call.respond(toggleLike(projectID, userID))
         }
 
         /**

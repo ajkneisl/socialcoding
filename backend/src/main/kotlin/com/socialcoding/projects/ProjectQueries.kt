@@ -91,12 +91,34 @@ fun projectsForUser(userId: Uuid): List<Project> = transaction {
         .map { it.toProject() }
 }
 
-/** Approved projects, shown publicly on the home and projects pages. */
-fun listApprovedProjects(): List<Project> = transaction {
-    projectsWithOwners()
-        .where { Projects.status eq ProjectStatus.APPROVED }
-        .orderBy(Projects.submittedAt)
-        .map { it.toProject() }
+/**
+ * Approved projects, shown publicly on the home and projects pages, ordered by hearts. When
+ * [userID] is given (the viewer is signed in), each project carries that user's like state.
+ */
+fun listApprovedProjects(userID: Uuid? = null): List<Project> = transaction {
+    val projects =
+        projectsWithOwners()
+            .where { Projects.status eq ProjectStatus.APPROVED }
+            .map { it.toProject() }
+    withLikes(projects, userID)
+}
+
+/**
+ * Attaches like counts and the viewer's like state, then orders by hearts (most first, newest
+ * breaking ties). Active and inactive projects share the ordering; callers split them by [Project.active].
+ * Must be inside a transaction.
+ */
+private fun withLikes(projects: List<Project>, userID: Uuid?): List<Project> {
+    if (projects.isEmpty()) return projects
+    val ids = projects.map { Uuid.parse(it.id) }
+    val counts = likeCountsFor(ids)
+    val mine = userID?.let { likedProjectIds(it, ids) } ?: emptySet()
+    return projects
+        .map { project ->
+            val id = Uuid.parse(project.id)
+            project.copy(likes = counts[id] ?: 0, liked = id in mine)
+        }
+        .sortedWith(compareByDescending<Project> { it.likes }.thenByDescending { it.submittedAt })
 }
 
 /** Loads [ProjectMember]s for the given user ids, ordered by name. Must be inside a transaction. */

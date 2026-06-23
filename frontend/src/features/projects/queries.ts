@@ -6,22 +6,24 @@ import {
     getProjectDetail,
     listMyProjects,
     listProjects,
+    toggleProjectLike,
     updateProjectDesign,
     updateProjectMembers,
     updateProjectTasks,
 } from './api'
-import type { CreateProjectRequest, TaskInput } from './types'
+import type { CreateProjectRequest, Project, TaskInput } from './types'
 
 export const projectKeys = {
     all: ['projects'] as const,
     mine: ['projects', 'mine'] as const,
-    detail: (id: number) => ['projects', id] as const,
+    detail: (id: string) => ['projects', id] as const,
 }
 
 export function useProjects() {
+    const { token } = useAuth()
     return useQuery({
         queryKey: projectKeys.all,
-        queryFn: listProjects,
+        queryFn: () => listProjects(token),
     })
 }
 
@@ -34,12 +36,27 @@ export function useMyProjects() {
     })
 }
 
-export function useProjectDetail(id: number) {
+export function useProjectDetail(id: string) {
     const { token } = useAuth()
     return useQuery({
         queryKey: projectKeys.detail(id),
         queryFn: () => getProjectDetail(token!, id),
-        enabled: !!token && !Number.isNaN(id),
+        enabled: !!token && !!id,
+    })
+}
+
+export function useToggleLike() {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: string) => toggleProjectLike(token!, id),
+        onSuccess: (result, id) => {
+            queryClient.setQueryData<Project[]>(projectKeys.all, (prev) =>
+                prev?.map((p) =>
+                    p.id === id ? { ...p, likes: result.likes, liked: result.liked } : p,
+                ),
+            )
+        },
     })
 }
 
@@ -62,7 +79,7 @@ type DesignUpdate = {
     designDoc: DesignDoc
 }
 
-export function useUpdateProjectDesign(id: number) {
+export function useUpdateProjectDesign(id: string) {
     const { token } = useAuth()
     const queryClient = useQueryClient()
     return useMutation({
@@ -74,7 +91,7 @@ export function useUpdateProjectDesign(id: number) {
     })
 }
 
-export function useUpdateProjectMembers(id: number) {
+export function useUpdateProjectMembers(id: string) {
     const { token } = useAuth()
     const queryClient = useQueryClient()
     return useMutation({
@@ -86,7 +103,7 @@ export function useUpdateProjectMembers(id: number) {
     })
 }
 
-export function useUpdateProjectTasks(id: number) {
+export function useUpdateProjectTasks(id: string) {
     const { token } = useAuth()
     const queryClient = useQueryClient()
     return useMutation({
