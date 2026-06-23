@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { listProjects } from '../features/projects/api'
-import type { Project } from '../features/projects/types'
+import { useMemo } from 'react'
+import { useProjects } from '../features/projects/queries'
 import { ProjectCard } from '../features/projects/ProjectCard'
 import { FormError } from '../components/FormError'
 import { SectionHead } from '../components/SectionHead'
@@ -10,14 +9,7 @@ import { page } from '../components/styles'
 const projectGrid = 'grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-[1.1rem]'
 
 export default function Projects() {
-    const [projects, setProjects] = useState<Project[]>([])
-    const [error, setError] = useState<string | null>(null)
-
-    useEffect(() => {
-        listProjects()
-            .then(setProjects)
-            .catch((e: Error) => setError(e.message))
-    }, [])
+    const { data: projects = [], error } = useProjects()
 
     const active = useMemo(() => projects.filter((p) => p.active), [projects])
     const past = useMemo(() => projects.filter((p) => !p.active), [projects])
@@ -35,7 +27,7 @@ export default function Projects() {
                 Start a design doc
             </LinkButton>
 
-            <FormError error={error} />
+            <FormError error={error?.message} />
 
             <div className={projectGrid}>
                 {active.map((p) => (

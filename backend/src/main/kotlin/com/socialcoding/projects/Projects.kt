@@ -46,8 +46,12 @@ enum class ProjectStatus {
  * @param siteUrl The optional site URL.
  * @param status The board status of the project.
  * @param active If the project is active.
+ * @param teamLeadName The name of the project's team lead (the owner if none is set).
+ * @param teamLeadAvatarUrl The team lead's profile picture, if they have one.
  * @param submittedAt When the project was submitted in epoch ms.
  * @param reviewNote A note left by the board member who reviewed the project.
+ * @param likes How many users have hearted the project.
+ * @param liked Whether the requesting user has hearted the project.
  */
 @Serializable
 data class Project(
@@ -58,23 +62,36 @@ data class Project(
     val siteUrl: String?,
     val status: ProjectStatus,
     val active: Boolean,
+    val teamLeadName: String,
+    val teamLeadAvatarUrl: String? = null,
     val submittedAt: Long,
     val reviewNote: String? = null,
+    val likes: Long = 0,
+    val liked: Boolean = false,
 )
 
-/** Convert a [ResultRow] into a [Project]. */
-fun ResultRow.toProject() =
-    Project(
+/**
+ * Convert a [ResultRow] into a [Project]. Expects the row to come from [projectsWithOwners], which
+ * joins the owner and (optionally) the team lead; the lead's name and avatar fall back to the
+ * owner's when no team lead is set.
+ */
+fun ResultRow.toProject(): Project {
+    val leadJoined = getOrNull(ProjectLead[Users.id]) != null
+    return Project(
         id = this[Projects.id].toString(),
         title = this[Projects.title],
         description = this[Projects.description],
         active = this[Projects.active],
+        teamLeadName = if (leadJoined) this[ProjectLead[Users.name]] else this[Users.name],
+        teamLeadAvatarUrl =
+            if (leadJoined) this[ProjectLead[Users.avatarUrl]] else this[Users.avatarUrl],
         repoUrl = this[Projects.repoUrl],
         siteUrl = this[Projects.siteUrl],
         status = this[Projects.status],
         submittedAt = this[Projects.submittedAt],
         reviewNote = this[Projects.reviewNote],
     )
+}
 
 /**
  * All details pertaining to a [Project].
@@ -148,6 +165,21 @@ data class ProjectDetail(
  */
 @Serializable
 data class PendingProject(
+    val project: Project,
+    val teamLeadID: String,
+    val members: List<ProjectMember>,
+)
+
+/**
+ * The public showcase view of an approved [Project]: who built it and how many hearts it has, but
+ * none of the internal design doc.
+ *
+ * @param project The project, with its like count and the viewer's like state.
+ * @param teamLeadID The ID of the team lead.
+ * @param members Everyone on the team, including the lead.
+ */
+@Serializable
+data class ProjectShowcase(
     val project: Project,
     val teamLeadID: String,
     val members: List<ProjectMember>,

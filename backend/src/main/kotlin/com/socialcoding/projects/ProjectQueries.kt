@@ -6,6 +6,8 @@ import com.socialcoding.db.Users
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.alias
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.or
@@ -28,8 +30,13 @@ fun decodeDesignDoc(raw: String?): DesignDocContent =
 fun encodeDesignDoc(doc: DesignDocContent): String =
     json.encodeToString(DesignDocContent.serializer(), doc)
 
+/** Aliased [Users] for the team lead, left-joined so projects without a lead still come through. */
+val ProjectLead = Users.alias("project_lead")
+
 fun projectsWithOwners() =
-    Projects.join(Users, JoinType.INNER, Projects.ownerId, Users.id).selectAll()
+    Projects.join(Users, JoinType.INNER, Projects.ownerId, Users.id)
+        .join(ProjectLead, JoinType.LEFT, Projects.teamLeadId, ProjectLead[Users.id])
+        .selectAll()
 
 /** Must be inside a transaction. */
 fun memberIdsOf(projectId: Uuid): List<Uuid> =
@@ -91,12 +98,56 @@ fun projectsForUser(userId: Uuid): List<Project> = transaction {
         .map { it.toProject() }
 }
 
-/** Approved projects, shown publicly on the home and projects pages. */
-fun listApprovedProjects(): List<Project> = transaction {
-    projectsWithOwners()
-        .where { Projects.status eq ProjectStatus.APPROVED }
-        .orderBy(Projects.submittedAt)
-        .map { it.toProject() }
+/**
+ * Approved projects, shown publicly on the home and projects pages, ordered by hearts. When
+ * [userID] is given (the viewer is signed in), each project carries that user's like state.
+ */
+fun listApprovedProjects(userID: Uuid? = null): List<Project> = transaction {
+    val projects =
+        projectsWithOwners()
+            .where { Projects.status eq ProjectStatus.APPROVED }
+            .map { it.toProject() }
+    withLikes(projects, userID)
+}
+
+/**
+ * Attaches like counts and the viewer's like state, then orders by hearts (most first, newest
+ * breaking ties). Active and inactive projects share the ordering; callers split them by [Project.active].
+ * Must be inside a transaction.
+ */
+private fun withLikes(projects: List<Project>, userID: Uuid?): List<Project> {
+    if (projects.isEmpty()) return projects
+    val ids = projects.map { Uuid.parse(it.id) }
+    val counts = likeCountsFor(ids)
+    val mine = userID?.let { likedProjectIds(it, ids) } ?: emptySet()
+    return projects
+        .map { project ->
+            val id = Uuid.parse(project.id)
+            project.copy(likes = counts[id] ?: 0, liked = id in mine)
+        }
+        .sortedWith(compareByDescending<Project> { it.likes }.thenByDescending { it.submittedAt })
+}
+
+/**
+ * The public showcase for an approved project: the project (with likes), its team lead, and the
+ * full team. Returns null if the project isn't approved (so it isn't publicly listed). [userID],
+ * when present, fills in the viewer's like state.
+ */
+fun projectShowcase(projectID: Uuid, userID: Uuid?): ProjectShowcase? = transaction {
+    val row =
+        projectsWithOwners()
+            .where { (Projects.id eq projectID) and (Projects.status eq ProjectStatus.APPROVED) }
+            .firstOrNull() ?: return@transaction null
+
+    val leadId = row[Projects.teamLeadId] ?: row[Projects.ownerId]
+    val likes = likeCountsFor(listOf(projectID))[projectID] ?: 0
+    val liked = userID != null && projectID in likedProjectIds(userID, listOf(projectID))
+
+    ProjectShowcase(
+        project = row.toProject().copy(likes = likes, liked = liked),
+        teamLeadID = leadId.toString(),
+        members = membersByIds(memberIdsOf(projectID) + leadId),
+    )
 }
 
 /** Loads [ProjectMember]s for the given user ids, ordered by name. Must be inside a transaction. */

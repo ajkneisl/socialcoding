@@ -4,24 +4,37 @@ import type { DesignDoc } from '../design/types'
 import {
     createProject,
     getProjectDetail,
+    getProjectShowcase,
     listMyProjects,
     listProjects,
+    toggleProjectLike,
     updateProjectDesign,
     updateProjectMembers,
     updateProjectTasks,
 } from './api'
-import type { CreateProjectRequest, TaskInput } from './types'
+import type { CreateProjectRequest, Project, ProjectShowcase, TaskInput } from './types'
 
 export const projectKeys = {
     all: ['projects'] as const,
     mine: ['projects', 'mine'] as const,
-    detail: (id: number) => ['projects', id] as const,
+    detail: (id: string) => ['projects', id] as const,
+    showcase: (id: string) => ['projects', id, 'showcase'] as const,
+}
+
+export function useProjectShowcase(id: string) {
+    const { token } = useAuth()
+    return useQuery({
+        queryKey: projectKeys.showcase(id),
+        queryFn: () => getProjectShowcase(id, token),
+        enabled: !!id,
+    })
 }
 
 export function useProjects() {
+    const { token } = useAuth()
     return useQuery({
         queryKey: projectKeys.all,
-        queryFn: listProjects,
+        queryFn: () => listProjects(token),
     })
 }
 
@@ -34,12 +47,35 @@ export function useMyProjects() {
     })
 }
 
-export function useProjectDetail(id: number) {
+export function useProjectDetail(id: string) {
     const { token } = useAuth()
     return useQuery({
         queryKey: projectKeys.detail(id),
         queryFn: () => getProjectDetail(token!, id),
-        enabled: !!token && !Number.isNaN(id),
+        enabled: !!token && !!id,
+    })
+}
+
+export function useToggleLike() {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: string) => toggleProjectLike(token!, id),
+        onSuccess: (result, id) => {
+            queryClient.setQueryData<Project[]>(projectKeys.all, (prev) =>
+                prev?.map((p) =>
+                    p.id === id ? { ...p, likes: result.likes, liked: result.liked } : p,
+                ),
+            )
+            queryClient.setQueryData<ProjectShowcase>(projectKeys.showcase(id), (prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          project: { ...prev.project, likes: result.likes, liked: result.liked },
+                      }
+                    : prev,
+            )
+        },
     })
 }
 
@@ -62,7 +98,7 @@ type DesignUpdate = {
     designDoc: DesignDoc
 }
 
-export function useUpdateProjectDesign(id: number) {
+export function useUpdateProjectDesign(id: string) {
     const { token } = useAuth()
     const queryClient = useQueryClient()
     return useMutation({
@@ -74,7 +110,7 @@ export function useUpdateProjectDesign(id: number) {
     })
 }
 
-export function useUpdateProjectMembers(id: number) {
+export function useUpdateProjectMembers(id: string) {
     const { token } = useAuth()
     const queryClient = useQueryClient()
     return useMutation({
@@ -86,7 +122,7 @@ export function useUpdateProjectMembers(id: number) {
     })
 }
 
-export function useUpdateProjectTasks(id: number) {
+export function useUpdateProjectTasks(id: string) {
     const { token } = useAuth()
     const queryClient = useQueryClient()
     return useMutation({

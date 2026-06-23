@@ -3,7 +3,7 @@ import type { DesignDoc } from '../design/types'
 export type ProjectStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 export interface Project {
-    id: number
+    id: string
     title: string
     description: string
     longDescription: string | null
@@ -11,9 +11,18 @@ export interface Project {
     siteUrl: string | null
     status: ProjectStatus
     active: boolean
-    ownerName: string
+    teamLeadName: string
+    teamLeadAvatarUrl: string | null
     submittedAt: number
     reviewNote?: string | null
+    likes: number
+    liked: boolean
+}
+
+/** Result of toggling a heart on a project. */
+export interface LikeResult {
+    liked: boolean
+    likes: number
 }
 
 export interface ProjectTask {
@@ -52,6 +61,13 @@ export interface ProjectDetail {
 
 /** A pending project paired with its team, for the board review queue. */
 export interface PendingProject {
+    project: Project
+    teamLeadID: string
+    members: ProjectMember[]
+}
+
+/** The public showcase view of an approved project: team and hearts, no design doc. */
+export interface ProjectShowcase {
     project: Project
     teamLeadID: string
     members: ProjectMember[]

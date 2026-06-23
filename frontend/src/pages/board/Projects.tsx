@@ -44,7 +44,7 @@ function PendingProjectCard({ pending }: { pending: PendingProject }) {
                 ))}
             </ul>
             <p className="mb-2 mt-[0.35rem] font-mono text-[0.8rem]">
-                <Link to={`/projects/${project.id}`}>view full design doc →</Link>
+                <Link to={`/projects/${project.id}/doc`}>view full design doc →</Link>
                 {project.repoUrl && (
                     <>
                         {' · '}
@@ -92,7 +92,7 @@ function ApprovedProjectRow({ project }: { project: Project }) {
             <div>
                 <h3 className="m-0 text-base">{project.title}</h3>
                 <p className="mb-0 mt-[0.1rem] font-mono text-[0.8rem] text-text-soft">
-                    led by {project.ownerName} ·{' '}
+                    led by {project.teamLeadName} ·{' '}
                     {active ? 'shown on the home page' : 'listed under past projects'}
                 </p>
             </div>

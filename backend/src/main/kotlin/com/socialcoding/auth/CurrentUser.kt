@@ -14,6 +14,10 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 /** The signed-in user's ID from the session JWT. */
 fun RoutingContext.currentUserID(): Uuid = Uuid.parse(call.principal<JWTPrincipal>()!!.subject!!)
 
+/** The signed-in user's ID, or null on an optionally-authenticated route with no valid token. */
+fun RoutingContext.optionalUserID(): Uuid? =
+    call.principal<JWTPrincipal>()?.subject?.let { Uuid.parse(it) }
+
 /** The signed-in user's role. */
 fun RoutingContext.currentRole(): Role {
     val userID = currentUserID()
