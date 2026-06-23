@@ -14,6 +14,7 @@ import {
     type EditableTask,
 } from '../features/design'
 import {useAuth} from '../auth-context'
+import GoogleSignIn from '../features/auth/GoogleSignIn'
 import {Button} from '../components/Button'
 import {FormActions} from '../components/FormActions'
 import {FormError} from '../components/FormError'
@@ -81,8 +82,10 @@ export default function CreateProject() {
         return (
             <NoticeCard eyebrow="Design doc" title="Sign in first">
                 <p className="text-text-soft">
-                    You need to be signed in to start a project design doc.
+                    To begin creating your project, please sign in.
                 </p>
+                <GoogleSignIn onError={setError} />
+                <FormError error={error} className="mt-4" />
             </NoticeCard>
         )
     }
