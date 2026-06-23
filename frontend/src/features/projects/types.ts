@@ -66,6 +66,13 @@ export interface PendingProject {
     members: ProjectMember[]
 }
 
+/** The public showcase view of an approved project: team and hearts, no design doc. */
+export interface ProjectShowcase {
+    project: Project
+    teamLeadID: string
+    members: ProjectMember[]
+}
+
 export interface CreateProjectRequest {
     title: string
     description: string

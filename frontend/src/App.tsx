@@ -13,6 +13,7 @@ import Events from './pages/Events'
 import Home from './pages/Home'
 import People from './pages/People'
 import ProjectDetail from './pages/ProjectDetail'
+import ProjectShowcase from './pages/ProjectShowcase'
 import Projects from './pages/Projects'
 
 export default function App() {
@@ -22,7 +23,8 @@ export default function App() {
                 <Route index element={<Home />} />
                 <Route path="projects" element={<Projects />} />
                 <Route path="projects/new" element={<CreateProject />} />
-                <Route path="projects/:id" element={<ProjectDetail />} />
+                <Route path="projects/:id" element={<ProjectShowcase />} />
+                <Route path="projects/:id/doc" element={<ProjectDetail />} />
                 <Route path="events" element={<Events />} />
                 <Route path="events/:id" element={<EventDetail />} />
                 <Route path="events/:id/attend" element={<EventAttend />} />

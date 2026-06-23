@@ -31,6 +31,15 @@ fun Route.projectRoutes() {
     // list every approved project, ordered by hearts; like state is filled in when signed in
     authenticate("session", optional = true) {
         get("/projects") { call.respond(listApprovedProjects(optionalUserID())) }
+
+        // GET /api/projects/{id}/showcase
+        // public project page: the project, its team, and hearts (no design doc)
+        get("/projects/{id}/showcase") {
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
+            val showcase =
+                projectShowcase(projectID, optionalUserID()) ?: throw NotFound("project")
+            call.respond(showcase)
+        }
     }
 
     authenticate("session") {

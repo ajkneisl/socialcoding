@@ -44,7 +44,7 @@ function PendingProjectCard({ pending }: { pending: PendingProject }) {
                 ))}
             </ul>
             <p className="mb-2 mt-[0.35rem] font-mono text-[0.8rem]">
-                <Link to={`/projects/${project.id}`}>view full design doc →</Link>
+                <Link to={`/projects/${project.id}/doc`}>view full design doc →</Link>
                 {project.repoUrl && (
                     <>
                         {' · '}

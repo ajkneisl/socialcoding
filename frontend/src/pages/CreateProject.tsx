@@ -117,7 +117,7 @@ export default function CreateProject() {
                     .filter((t) => t.name.trim() !== '')
                     .map((t) => ({...t, name: t.name.trim()})),
             })
-            navigate(`/projects/${detail.project.id}`)
+            navigate(`/projects/${detail.project.id}/doc`)
         } catch (err) {
             setError((err as Error).message)
         }

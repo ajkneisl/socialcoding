@@ -6,7 +6,7 @@ import { ActiveBadge, ReviewNote, StatusBadge } from './StatusBadge'
 import type { Project } from './types'
 
 const repoLink =
-    'inline-flex items-center gap-[0.4rem] font-semibold text-text-soft hover:text-gold hover:no-underline'
+    'relative z-10 inline-flex items-center gap-[0.4rem] font-semibold text-text-soft hover:text-gold hover:no-underline'
 
 export function ProjectCard({
     project,
@@ -17,17 +17,19 @@ export function ProjectCard({
     showStatus?: boolean
     linkToDoc?: boolean
 }) {
+    // The whole card is a link; the title carries it via a stretched overlay so interactive
+    // children (hearts, repo links) still work above it.
+    const to = linkToDoc ? `/projects/${project.id}/doc` : `/projects/${project.id}`
+
     return (
         <article
-            className={`${card} flex flex-col transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-text-faint`}
+            className={`${card} relative flex flex-col transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-text-faint`}
         >
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <h3 className="m-0">
-                    {linkToDoc ? (
-                        <Link to={`/projects/${project.id}`}>{project.title}</Link>
-                    ) : (
-                        project.title
-                    )}
+                    <Link to={to} className="after:absolute after:inset-0 after:content-['']">
+                        {project.title}
+                    </Link>
                 </h3>
                 {showStatus ? (
                     <StatusBadge status={project.status} />
@@ -37,7 +39,11 @@ export function ProjectCard({
             </div>
             <p className="mb-3 mt-[0.45rem] text-text-soft">{project.description}</p>
             <div className="mt-auto flex items-center justify-between gap-3 pt-2 font-mono text-[0.8rem] text-text-faint">
-                {!showStatus && <LikeButton project={project} />}
+                {!showStatus && (
+                    <span className="relative z-10">
+                        <LikeButton project={project} />
+                    </span>
+                )}
                 <span className="flex min-w-0 items-center gap-[0.45rem]">
                     <span className="truncate">led by {project.teamLeadName}</span>
                     <Avatar

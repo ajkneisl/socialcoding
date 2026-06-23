@@ -1,11 +1,21 @@
 import { request } from '../../lib/request'
 import type { DesignDoc } from '../design/types'
-import type { CreateProjectRequest, LikeResult, Project, ProjectDetail, TaskInput } from './types'
+import type {
+    CreateProjectRequest,
+    LikeResult,
+    Project,
+    ProjectDetail,
+    ProjectShowcase,
+    TaskInput,
+} from './types'
 
 export const listProjects = (token?: string | null) =>
     request<Project[]>('/api/projects', { token })
 
 export const listMyProjects = (token: string) => request<Project[]>('/api/projects/mine', { token })
+
+export const getProjectShowcase = (id: string, token?: string | null) =>
+    request<ProjectShowcase>(`/api/projects/${id}/showcase`, { token })
 
 export const getProjectDetail = (token: string, id: string) =>
     request<ProjectDetail>(`/api/projects/${id}`, { token })

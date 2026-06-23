@@ -4,6 +4,7 @@ import type { DesignDoc } from '../design/types'
 import {
     createProject,
     getProjectDetail,
+    getProjectShowcase,
     listMyProjects,
     listProjects,
     toggleProjectLike,
@@ -11,12 +12,22 @@ import {
     updateProjectMembers,
     updateProjectTasks,
 } from './api'
-import type { CreateProjectRequest, Project, TaskInput } from './types'
+import type { CreateProjectRequest, Project, ProjectShowcase, TaskInput } from './types'
 
 export const projectKeys = {
     all: ['projects'] as const,
     mine: ['projects', 'mine'] as const,
     detail: (id: string) => ['projects', id] as const,
+    showcase: (id: string) => ['projects', id, 'showcase'] as const,
+}
+
+export function useProjectShowcase(id: string) {
+    const { token } = useAuth()
+    return useQuery({
+        queryKey: projectKeys.showcase(id),
+        queryFn: () => getProjectShowcase(id, token),
+        enabled: !!id,
+    })
 }
 
 export function useProjects() {
@@ -55,6 +66,14 @@ export function useToggleLike() {
                 prev?.map((p) =>
                     p.id === id ? { ...p, likes: result.likes, liked: result.liked } : p,
                 ),
+            )
+            queryClient.setQueryData<ProjectShowcase>(projectKeys.showcase(id), (prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          project: { ...prev.project, likes: result.likes, liked: result.liked },
+                      }
+                    : prev,
             )
         },
     })
