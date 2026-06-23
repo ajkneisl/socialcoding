@@ -11,7 +11,8 @@ export interface Project {
     siteUrl: string | null
     status: ProjectStatus
     active: boolean
-    ownerName: string
+    teamLeadName: string
+    teamLeadAvatarUrl: string | null
     submittedAt: number
     reviewNote?: string | null
     likes: number

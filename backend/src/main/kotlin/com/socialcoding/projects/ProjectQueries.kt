@@ -6,6 +6,7 @@ import com.socialcoding.db.Users
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.alias
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.or
@@ -28,8 +29,13 @@ fun decodeDesignDoc(raw: String?): DesignDocContent =
 fun encodeDesignDoc(doc: DesignDocContent): String =
     json.encodeToString(DesignDocContent.serializer(), doc)
 
+/** Aliased [Users] for the team lead, left-joined so projects without a lead still come through. */
+val ProjectLead = Users.alias("project_lead")
+
 fun projectsWithOwners() =
-    Projects.join(Users, JoinType.INNER, Projects.ownerId, Users.id).selectAll()
+    Projects.join(Users, JoinType.INNER, Projects.ownerId, Users.id)
+        .join(ProjectLead, JoinType.LEFT, Projects.teamLeadId, ProjectLead[Users.id])
+        .selectAll()
 
 /** Must be inside a transaction. */
 fun memberIdsOf(projectId: Uuid): List<Uuid> =
