@@ -104,6 +104,7 @@ function ProfileForm() {
                     />
                 </label>
                 <label>
+                    Company Name
                     <input
                         value={company}
                         onChange={(e) => setCompany(e.target.value)}
