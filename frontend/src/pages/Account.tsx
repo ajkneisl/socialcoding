@@ -1,21 +1,21 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { authApi } from '../features/auth/api'
+import {useCallback, useEffect, useState, type FormEvent} from 'react'
+import {Link} from 'react-router-dom'
+import {authApi} from '../features/auth/api'
 import GoogleSignIn from '../features/auth/GoogleSignIn'
-import { listMyProjects } from '../features/projects/api'
-import type { Project } from '../features/projects/types'
-import { ProjectCard } from '../features/projects/ProjectCard'
-import { useAuth } from '../auth-context'
-import { Avatar } from '../components/Avatar'
-import { Button, LinkButton } from '../components/Button'
-import { Switch } from '../components/Switch'
-import { FormError } from '../components/FormError'
-import { NoticeCard } from '../components/NoticeCard'
-import { PageMessage } from '../components/PageMessage'
-import { card, page } from '../components/styles'
+import {listMyProjects} from '../features/projects/api'
+import type {Project} from '../features/projects/types'
+import {ProjectCard} from '../features/projects/ProjectCard'
+import {useAuth} from '../auth-context'
+import {Avatar} from '../components/Avatar'
+import {Button, LinkButton} from '../components/Button'
+import {Switch} from '../components/Switch'
+import {FormError} from '../components/FormError'
+import {NoticeCard} from '../components/NoticeCard'
+import {PageMessage} from '../components/PageMessage'
+import {card, page} from '../components/styles'
 
 function ProfileForm() {
-    const { user, token, refreshUser } = useAuth()
+    const {user, token, refreshUser} = useAuth()
     const [joinedTerm, setJoinedTerm] = useState(user?.joinedTerm ?? '')
     const [gradYear, setGradYear] = useState(user?.gradYear ? String(user.gradYear) : '')
     const [github, setGithub] = useState(user?.github ?? '')
@@ -118,7 +118,7 @@ function ProfileForm() {
                 label="Show up on member list"
                 description="When on, your profile appears on the public People page."
             />
-            <FormError error={error} />
+            <FormError error={error}/>
             {saved && <p className="m-0 text-green-400">Profile saved.</p>}
             <Button variant="primary" type="submit" className="self-start">
                 Save profile
@@ -128,7 +128,7 @@ function ProfileForm() {
 }
 
 export default function Account() {
-    const { user, token, loading, logout } = useAuth()
+    const {user, token, loading, logout} = useAuth()
     const [myProjects, setMyProjects] = useState<Project[]>([])
     const [loginError, setLoginError] = useState<string | null>(null)
 
@@ -151,10 +151,10 @@ export default function Account() {
             <NoticeCard eyebrow="Account" title="Sign in">
                 <p className="text-text-soft">
                     Use your University of Minnesota Google account (<strong>@umn.edu</strong>).
-                    Other accounts won't work.
                 </p>
-                <GoogleSignIn onError={onLoginError} />
-                <FormError error={loginError} className="mt-4" />
+
+                <GoogleSignIn onError={onLoginError}/>
+                <FormError error={loginError} className="mt-4"/>
             </NoticeCard>
         )
     }
@@ -162,7 +162,7 @@ export default function Account() {
     return (
         <section className={page}>
             <div className="mb-8 flex flex-wrap items-center gap-5">
-                <Avatar name={user.name} avatarUrl={user.avatarUrl} size="lg" />
+                <Avatar name={user.name} avatarUrl={user.avatarUrl} size="lg"/>
                 <div>
                     <h2 className="mb-[0.1rem]">{user.name}</h2>
                     <p className="m-0 font-mono text-[0.8rem] text-text-soft">
@@ -178,7 +178,7 @@ export default function Account() {
                 </div>
             </div>
 
-            <ProfileForm key={user.id} />
+            <ProfileForm key={user.id}/>
 
             <div className="mb-7 max-w-[680px]">
                 <h3>Your projects</h3>
@@ -194,7 +194,7 @@ export default function Account() {
             ) : (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-[1.1rem]">
                     {myProjects.map((p) => (
-                        <ProjectCard key={p.id} project={p} showStatus linkToDoc />
+                        <ProjectCard key={p.id} project={p} showStatus linkToDoc/>
                     ))}
                 </div>
             )}
