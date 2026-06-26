@@ -50,9 +50,11 @@ export default function CompanyMarquee({ companies }: { companies: string[] }) {
     )
 
     return (
-        <div className="group mt-8 flex w-max [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
-            {track(false)}
-            {track(true)}
+        <div className="group mt-8 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
+            <div className="flex w-max">
+                {track(false)}
+                {track(true)}
+            </div>
         </div>
     )
 }
