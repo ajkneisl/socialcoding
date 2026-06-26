@@ -92,6 +92,12 @@ export default function Layout() {
                         </button>
                     </div>
                 </nav>
+
+                {menuOpen && (
+                    <div className="hidden border-t border-line-soft max-md:block">
+                        <div className={`${container} flex flex-col gap-1 py-3`}>{navLinks}</div>
+                    </div>
+                )}
             </header>
 
             <main className="flex-1">
