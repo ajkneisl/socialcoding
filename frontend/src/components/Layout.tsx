@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth-context'
-import { AnchorButton, LinkButton } from './Button'
+import { LinkButton } from './Button'
 import { Avatar } from './Avatar'
 import { container } from './styles'
 
@@ -32,12 +32,15 @@ export default function Layout() {
             <NavLink to="/projects" className={navLinkClass} onClick={() => setMenuOpen(false)}>
                 Projects
             </NavLink>
+
             <NavLink to="/events" className={navLinkClass} onClick={() => setMenuOpen(false)}>
                 Events
             </NavLink>
+
             <NavLink to="/people" className={navLinkClass} onClick={() => setMenuOpen(false)}>
                 People
             </NavLink>
+
             {user?.role === 'BOARD' && (
                 <NavLink to="/board" className={navLinkClass} onClick={() => setMenuOpen(false)}>
                     Board
@@ -51,28 +54,18 @@ export default function Layout() {
             <header className="sticky top-0 z-50 border-b border-line-soft bg-bg/82 backdrop-blur-[12px]">
                 <nav className={`${container} flex h-[68px] items-center gap-8 max-md:gap-4`}>
                     <Logo />
+
                     <div className="flex flex-1 gap-6 max-md:hidden">{navLinks}</div>
+
                     <div className="flex items-center gap-[0.6rem] max-md:flex-1 max-md:justify-end">
-                        <AnchorButton
-                            variant="ghost"
-                            href="https://discord.gg/5GGURYZPpp"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="max-md:hidden"
-                        >
-                            Discord
-                        </AnchorButton>
                         {user ? (
-                            <Link
-                                to="/account"
-                                aria-label="Account"
-                                className="hover:no-underline"
-                            >
+                            <Link to="/account" aria-label="Account" className="hover:no-underline">
                                 <Avatar name={user.name} avatarUrl={user.avatarUrl} size="sm" />
                             </Link>
                         ) : (
                             <LinkButton to="/account">Sign in</LinkButton>
                         )}
+
                         <button
                             type="button"
                             className="hidden cursor-pointer items-center justify-center rounded-lg border border-line p-2 text-text hover:bg-bg-raised max-md:inline-flex"
@@ -99,21 +92,10 @@ export default function Layout() {
                         </button>
                     </div>
                 </nav>
+
                 {menuOpen && (
-                    <div className="hidden border-t border-line-soft bg-bg max-md:block">
-                        <div className={`${container} flex flex-col gap-1 py-3`}>
-                            {navLinks}
-                            <AnchorButton
-                                variant="ghost"
-                                href="https://discord.gg/5GGURYZPpp"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="mt-2 self-start"
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                Discord
-                            </AnchorButton>
-                        </div>
+                    <div className="hidden border-t border-line-soft max-md:block">
+                        <div className={`${container} flex flex-col gap-1 py-3`}>{navLinks}</div>
                     </div>
                 )}
             </header>
@@ -128,38 +110,48 @@ export default function Layout() {
                 >
                     <div className="flex flex-col items-start gap-[0.4rem]">
                         <Logo />
+
                         <p className="mb-0 mt-1 max-w-[40ch]">
                             A student-run software development community at the University of
                             Minnesota Twin Cities. Everyone is welcome, no experience required.
                         </p>
+
                         <p className="m-0 max-w-[40ch] font-mono text-[0.8rem]">
                             Weekly Meetings · Bruininks Hall 312
                         </p>
                     </div>
+
                     <div className="flex flex-col items-start gap-[0.4rem]">
                         <h4 className="mb-2 text-[0.8rem] uppercase tracking-[0.08em] text-text">
                             Site
                         </h4>
+
                         <Link to="/projects" className="text-text-soft hover:text-gold">
                             Projects
                         </Link>
+
                         <Link to="/events" className="text-text-soft hover:text-gold">
                             Events
                         </Link>
+
                         <Link to="/people" className="text-text-soft hover:text-gold">
                             People
                         </Link>
+
                         <Link to="/account" className="text-text-soft hover:text-gold">
                             Account
                         </Link>
                     </div>
+
                     <div className="flex flex-col items-start gap-[0.4rem]">
                         <h4 className="mb-2 text-[0.8rem] uppercase tracking-[0.08em] text-text">
                             Connect
                         </h4>
+
                         <a href="mailto:coding@umn.edu" className="text-text-soft hover:text-gold">
                             coding@umn.edu
                         </a>
+
                         <a
                             href="https://github.umn.edu/Minnesota-Social-Coding"
                             target="_blank"
@@ -168,8 +160,9 @@ export default function Layout() {
                         >
                             GitHub
                         </a>
+
                         <a
-                            href="https://www.linkedin.com/company/social-coding"
+                            href="https://www.linkedin.com/company/social-coding-umn/"
                             target="_blank"
                             rel="noreferrer"
                             className="text-text-soft hover:text-gold"
@@ -178,6 +171,7 @@ export default function Layout() {
                         </a>
                     </div>
                 </div>
+
                 <div
                     className={`${container} mt-10 border-t border-line-soft pt-6 text-[0.85rem] text-text-faint`}
                 >

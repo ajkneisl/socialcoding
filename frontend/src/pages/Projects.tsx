@@ -16,16 +16,18 @@ export default function Projects() {
 
     return (
         <section className={page}>
-            <SectionHead eyebrow="Projects" title="Active projects">
-                Start/Manage your project(s) here.
-            </SectionHead>
+            <div className="flex flex-row items-center justify-between">
+                <SectionHead eyebrow="Projects" title="Active projects">
+                    Start/Manage your project(s) here.
+                </SectionHead>
 
-            <LinkButton
-                to="/projects/new"
-                className="mb-7 shadow-[0_0_0_0_rgba(255,211,2,0)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-4px_rgba(255,211,2,0.45)]"
-            >
-                Start a design doc
-            </LinkButton>
+                <LinkButton
+                    to="/projects/new"
+                    className="mb-7 shadow-[0_0_0_0_rgba(255,211,2,0)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-4px_rgba(255,211,2,0.45)]"
+                >
+                    Start a design doc
+                </LinkButton>
+            </div>
 
             <FormError error={error?.message} />
 
@@ -40,6 +42,7 @@ export default function Projects() {
                     <SectionHead title="Past projects" className="mt-14">
                         Projects from past semesters.
                     </SectionHead>
+
                     <div className={projectGrid}>
                         {past.map((p) => (
                             <ProjectCard key={p.id} project={p} />
