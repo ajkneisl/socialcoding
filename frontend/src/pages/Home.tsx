@@ -275,7 +275,7 @@ export default function Home() {
             </section>
 
             <section className={`${container} pb-4 pt-16`}>
-                <div className="flex flex-wrap items-center justify-between gap-8 rounded-xl border border-line bg-bg-raised bg-[radial-gradient(26rem_14rem_at_95%_0%,rgb(180_6_57/0.22),transparent_60%)] px-8 py-9">
+                <div className="flex flex-wrap items-center justify-between gap-8 rounded-xl border border-line px-8 py-9">
                     <div>
                         <h2 className="text-2xl">Have an idea worth building?</h2>
                         <p className="m-0 max-w-[52ch] text-text-soft">
@@ -283,7 +283,11 @@ export default function Home() {
                             building.
                         </p>
                     </div>
-                    <LinkButton lg to="/projects/new">
+                    <LinkButton
+                        lg
+                        to="/projects/new"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    >
                         Create a project
                     </LinkButton>
                 </div>
