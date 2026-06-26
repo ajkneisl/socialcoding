@@ -53,15 +53,14 @@ export default function Home() {
 
     const activeProjects = useMemo(() => projects.filter((p) => p.active), [projects])
 
-    const companies = ['Raytheon', 'Raytheon',"Raytheon","Raytheon","Raytheon","Raytheon","Raytheon"]
-    // const companies = useMemo(() => {
-    //     const seen = new Set<string>()
-    //     for (const p of people) {
-    //         const c = p.company?.trim()
-    //         if (c) seen.add(c)
-    //     }
-    //     return [...seen].sort()
-    // }, [people])
+    const companies = useMemo(() => {
+        const seen = new Set<string>()
+        for (const p of people) {
+            const c = p.company?.trim()
+            if (c) seen.add(c)
+        }
+        return [...seen].sort()
+    }, [people])
 
     const board = useMemo(
         () =>
