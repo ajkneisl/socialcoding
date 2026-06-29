@@ -2,11 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth-context'
 import type { DesignDoc } from '../design/types'
 import {
+    acceptInvite,
     createProject,
+    declineInvite,
     getProjectDetail,
+    getPresentationDates,
     getProjectShowcase,
+    listMyInvites,
     listMyProjects,
     listProjects,
+    resubmitProject,
     toggleProjectLike,
     updateProjectDesign,
     updateProjectMembers,
@@ -17,8 +22,19 @@ import type { CreateProjectRequest, Project, ProjectShowcase, TaskInput } from '
 export const projectKeys = {
     all: ['projects'] as const,
     mine: ['projects', 'mine'] as const,
+    invites: ['projects', 'invites'] as const,
+    presentationDates: ['projects', 'presentation-dates'] as const,
     detail: (id: string) => ['projects', id] as const,
     showcase: (id: string) => ['projects', id, 'showcase'] as const,
+}
+
+export function usePresentationDates() {
+    const { token } = useAuth()
+    return useQuery({
+        queryKey: projectKeys.presentationDates,
+        queryFn: () => getPresentationDates(token!),
+        enabled: !!token,
+    })
 }
 
 export function useProjectShowcase(id: string) {
@@ -44,6 +60,28 @@ export function useMyProjects() {
         queryKey: projectKeys.mine,
         queryFn: () => listMyProjects(token!),
         enabled: !!token,
+    })
+}
+
+export function useMyInvites() {
+    const { token } = useAuth()
+    return useQuery({
+        queryKey: projectKeys.invites,
+        queryFn: () => listMyInvites(token!),
+        enabled: !!token,
+    })
+}
+
+export function useRespondToInvite() {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, accept }: { id: string; accept: boolean }) =>
+            accept ? acceptInvite(token!, id) : declineInvite(token!, id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: projectKeys.invites })
+            queryClient.invalidateQueries({ queryKey: projectKeys.mine })
+        },
     })
 }
 
@@ -118,6 +156,19 @@ export function useUpdateProjectMembers(id: string) {
             updateProjectMembers(token!, id, body),
         onSuccess: (updated) => {
             if (updated) queryClient.setQueryData(projectKeys.detail(id), updated)
+        },
+    })
+}
+
+export function useResubmitProject(id: string) {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: () => resubmitProject(token!, id),
+        onSuccess: (updated) => {
+            queryClient.setQueryData(projectKeys.detail(id), updated)
+            queryClient.invalidateQueries({ queryKey: projectKeys.all })
+            queryClient.invalidateQueries({ queryKey: projectKeys.mine })
         },
     })
 }

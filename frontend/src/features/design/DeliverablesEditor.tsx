@@ -1,4 +1,4 @@
-import type { ProjectMember } from '../projects/types'
+import type { PresentationDates, ProjectMember } from '../projects/types'
 import type { EditableTask } from './tasks'
 import { Button } from '../../components/Button'
 import { Chip } from '../../components/Chip'
@@ -7,13 +7,24 @@ export function DeliverablesEditor({
     tasks,
     team,
     onChange,
+    presentationDates,
 }: {
     tasks: EditableTask[]
     team: ProjectMember[]
     onChange: (tasks: EditableTask[]) => void
+    /** Board-set dates the MVP/Final milestones inherit; their date fields become read-only. */
+    presentationDates?: PresentationDates
 }) {
     function update(i: number, patch: Partial<EditableTask>) {
         onChange(tasks.map((t, j) => (j === i ? { ...t, ...patch } : t)))
+    }
+
+    function milestoneDate(task: EditableTask): string {
+        if (presentationDates) {
+            if (/final/i.test(task.name)) return presentationDates.finalDate
+            if (/mvp/i.test(task.name)) return presentationDates.mvpDate
+        }
+        return task.dueDate
     }
 
     function remove(i: number) {
@@ -53,9 +64,13 @@ export function DeliverablesEditor({
                         </label>
                         <label className="flex-[0_0_170px]">
                             Due date
+                            {task.milestone && (
+                                <span className="text-text-soft"> (set by the board)</span>
+                            )}
                             <input
                                 type="date"
-                                value={task.dueDate}
+                                value={task.milestone ? milestoneDate(task) : task.dueDate}
+                                disabled={task.milestone}
                                 onChange={(e) => update(i, { dueDate: e.target.value })}
                             />
                         </label>

@@ -4,7 +4,9 @@ import { useReviewProject } from '../features/board/queries'
 import { usePeople } from '../features/people/queries'
 import type { Person } from '../features/people/types'
 import {
+    usePresentationDates,
     useProjectDetail,
+    useResubmitProject,
     useUpdateProjectDesign,
     useUpdateProjectMembers,
     useUpdateProjectTasks,
@@ -36,10 +38,19 @@ const sectionHead = 'mb-3 flex items-center justify-between gap-4'
 
 function BoardReview({ detail }: { detail: Detail }) {
     const reviewProject = useReviewProject()
+    const [rejecting, setRejecting] = useState(false)
     const [note, setNote] = useState('')
 
-    function review(decision: 'approve' | 'reject') {
-        reviewProject.mutate({ id: detail.project.id, decision, note: note || undefined })
+    function approve() {
+        reviewProject.mutate({ id: detail.project.id, decision: 'approve' })
+    }
+
+    function reject() {
+        reviewProject.mutate({
+            id: detail.project.id,
+            decision: 'reject',
+            note: note.trim() || undefined,
+        })
     }
 
     const busy = reviewProject.isPending
@@ -49,24 +60,59 @@ function BoardReview({ detail }: { detail: Detail }) {
         <div className={`${card} mb-10 flex flex-col gap-[0.9rem]`}>
             <h3 className="m-0">Board review</h3>
             <p className="m-0 text-text-soft">This design doc is awaiting a decision.</p>
-            <label>
-                Note to the team <span className="text-text-soft">(optional)</span>
-                <input
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Feedback, conditions, next steps…"
-                    maxLength={1000}
-                />
-            </label>
             <FormError error={error} />
-            <div className="flex gap-[0.6rem]">
-                <Button disabled={busy} onClick={() => review('approve')}>
-                    Approve
-                </Button>
-                <Button variant="danger" disabled={busy} onClick={() => review('reject')}>
-                    Reject
-                </Button>
-            </div>
+            {rejecting ? (
+                <>
+                    <label>
+                        Feedback to the team <span className="text-text-soft">(optional)</span>
+                        <textarea
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder="What should the team change before resubmitting?"
+                            rows={3}
+                            maxLength={1000}
+                        />
+                    </label>
+                    <div className="flex gap-[0.6rem]">
+                        <Button variant="ghost" disabled={busy} onClick={() => setRejecting(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="danger" disabled={busy} onClick={reject}>
+                            {busy ? 'Sending…' : 'Confirm rejection'}
+                        </Button>
+                    </div>
+                </>
+            ) : (
+                <div className="flex gap-[0.6rem]">
+                    <Button disabled={busy} onClick={approve}>
+                        Approve
+                    </Button>
+                    <Button variant="danger" disabled={busy} onClick={() => setRejecting(true)}>
+                        Reject
+                    </Button>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function RejectedNotice({ detail }: { detail: Detail }) {
+    const resubmit = useResubmitProject(detail.project.id)
+
+    return (
+        <div className="mt-3 flex flex-col items-start gap-[0.6rem]">
+            {detail.project.reviewNote && <ReviewNote note={detail.project.reviewNote} className="m-0" />}
+            {detail.canManageTeam && (
+                <>
+                    <p className="m-0 text-text-soft">
+                        Make any changes above, then send it back to the board.
+                    </p>
+                    <Button disabled={resubmit.isPending} onClick={() => resubmit.mutate()}>
+                        {resubmit.isPending ? 'Resubmitting…' : 'Resubmit for review'}
+                    </Button>
+                    <FormError error={resubmit.error?.message ?? null} />
+                </>
+            )}
         </div>
     )
 }
@@ -133,15 +179,33 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
                     </FormActions>
                 </div>
             ) : (
-                <ul className="flex flex-col gap-[0.45rem]">
-                    {detail.members.map((m) => (
-                        <li key={m.id} className="flex items-center gap-[0.65rem]">
-                            <Avatar name={m.name} avatarUrl={m.avatarUrl} size="sm" />
-                            <span className="font-medium">{m.name}</span>
-                            {m.id === detail.teamLeadId && <Badge variant="board">team lead</Badge>}
-                        </li>
-                    ))}
-                </ul>
+                <>
+                    <ul className="flex flex-col gap-[0.45rem]">
+                        {detail.members.map((m) => (
+                            <li key={m.id} className="flex items-center gap-[0.65rem]">
+                                <Avatar name={m.name} avatarUrl={m.avatarUrl} size="sm" />
+                                <span className="font-medium">{m.name}</span>
+                                {m.id === detail.teamLeadId && (
+                                    <Badge variant="board">team lead</Badge>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                    {detail.pendingMembers.length > 0 && (
+                        <ul className="mt-[0.45rem] flex flex-col gap-[0.45rem]">
+                            {detail.pendingMembers.map((m) => (
+                                <li
+                                    key={m.id}
+                                    className="flex items-center gap-[0.65rem] opacity-60"
+                                >
+                                    <Avatar name={m.name} avatarUrl={m.avatarUrl} size="sm" />
+                                    <span className="font-medium">{m.name}</span>
+                                    <Badge variant="pending">invite pending</Badge>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </>
             )}
         </div>
     )
@@ -260,6 +324,7 @@ function DesignDocSections({ detail }: { detail: Detail }) {
 
 function DeliverablesSection({ detail }: { detail: Detail }) {
     const updateTasks = useUpdateProjectTasks(detail.project.id)
+    const { data: presentationDates } = usePresentationDates()
     const [editing, setEditing] = useState(false)
     const [tasks, setTasks] = useState<EditableTask[]>([])
 
@@ -298,10 +363,15 @@ function DeliverablesSection({ detail }: { detail: Detail }) {
             {editing ? (
                 <div className="flex flex-col gap-[0.9rem]">
                     <p className="m-0 text-text-soft">
-                        The MVP and final presentations are required milestones — their dates can
-                        change, but they can't be removed.
+                        The MVP and final presentations are required milestones — their dates are
+                        set by the board and they can't be removed.
                     </p>
-                    <DeliverablesEditor tasks={tasks} team={detail.members} onChange={setTasks} />
+                    <DeliverablesEditor
+                        tasks={tasks}
+                        team={detail.members}
+                        onChange={setTasks}
+                        presentationDates={presentationDates}
+                    />
                     <FormError error={error} />
                     <FormActions>
                         <Button variant="ghost" disabled={busy} onClick={() => setEditing(false)}>
@@ -375,9 +445,7 @@ export default function ProjectDetail() {
                         </>
                     )}
                 </p>
-                {detail.project.status === 'REJECTED' && detail.project.reviewNote && (
-                    <ReviewNote note={detail.project.reviewNote} />
-                )}
+                {detail.project.status === 'REJECTED' && <RejectedNotice detail={detail} />}
             </div>
 
             {user.role === 'BOARD' && detail.project.status === 'PENDING' && (

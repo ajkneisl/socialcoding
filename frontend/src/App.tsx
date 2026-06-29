@@ -6,6 +6,7 @@ import BoardLayout from './pages/board/BoardLayout'
 import BoardEvents from './pages/board/Events'
 import BoardOverview from './pages/board/Overview'
 import BoardProjects from './pages/board/Projects'
+import BoardSettings from './pages/board/Settings'
 import CreateProject from './pages/CreateProject'
 import EventAttend from './pages/EventAttend'
 import EventDetail from './pages/EventDetail'
@@ -35,6 +36,7 @@ export default function App() {
                     <Route path="projects" element={<BoardProjects />} />
                     <Route path="events" element={<BoardEvents />} />
                     <Route path="analytics" element={<BoardAnalytics />} />
+                    <Route path="settings" element={<BoardSettings />} />
                 </Route>
             </Route>
         </Routes>

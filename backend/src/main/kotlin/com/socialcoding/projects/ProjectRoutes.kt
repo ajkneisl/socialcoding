@@ -3,9 +3,11 @@ package com.socialcoding.projects
 import com.socialcoding.auth.currentRole
 import com.socialcoding.auth.currentUserID
 import com.socialcoding.auth.optionalUserID
+import com.socialcoding.board.BoardSettings
 import com.socialcoding.common.ApiError
 import com.socialcoding.common.InvalidAuthorization
 import com.socialcoding.common.NotFound
+import com.socialcoding.db.MemberStatus
 import com.socialcoding.db.ProjectMembers
 import com.socialcoding.db.Users
 import io.ktor.http.HttpStatusCode
@@ -17,8 +19,10 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import kotlinx.serialization.Serializable
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.notInList
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -102,9 +106,16 @@ fun Route.projectRoutes() {
                     ProjectMembers.insert {
                         it[ProjectMembers.projectID] = id
                         it[ProjectMembers.userID] = memberID
+                        // The creator is on the team immediately; everyone else is invited.
+                        it[status] =
+                            if (memberID == userID) MemberStatus.ACCEPTED else MemberStatus.PENDING
                     }
                 }
-                replaceTasks(id, withRequiredMilestones(body.tasks), teamIds.toSet())
+                replaceTasks(
+                    id,
+                    withRequiredMilestones(body.tasks, BoardSettings.presentationDates()),
+                    teamIds.toSet(),
+                )
                 id
             }
 
@@ -118,6 +129,48 @@ fun Route.projectRoutes() {
         // list the projects the signed-in user owns, leads, or is a member of
         get("/projects/mine") { call.respond(projectsForUser(currentUserID())) }
 
+        // GET /api/projects/presentation-dates
+        // the board-set MVP/Final presentation dates that milestones inherit
+        get("/projects/presentation-dates") { call.respond(BoardSettings.presentationDates()) }
+
+        // GET /api/projects/invites
+        // list the projects the signed-in user has a pending invite to
+        get("/projects/invites") { call.respond(invitesForUser(currentUserID())) }
+
+        // POST /api/projects/{id}/invite/accept
+        // accept a pending invite, joining the project's team
+        post("/projects/{id}/invite/accept") {
+            val userID = currentUserID()
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
+            val updated = transaction {
+                ProjectMembers.update({
+                    (ProjectMembers.projectID eq projectID) and
+                        (ProjectMembers.userID eq userID) and
+                        (ProjectMembers.status eq MemberStatus.PENDING)
+                }) {
+                    it[status] = MemberStatus.ACCEPTED
+                }
+            }
+            if (updated == 0) throw NotFound("invite")
+            call.respond(HttpStatusCode.OK)
+        }
+
+        // POST /api/projects/{id}/invite/decline
+        // decline a pending invite, dropping the user from the project
+        post("/projects/{id}/invite/decline") {
+            val userID = currentUserID()
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
+            val removed = transaction {
+                ProjectMembers.deleteWhere {
+                    (ProjectMembers.projectID eq projectID) and
+                        (ProjectMembers.userID eq userID) and
+                        (ProjectMembers.status eq MemberStatus.PENDING)
+                }
+            }
+            if (removed == 0) throw NotFound("invite")
+            call.respond(HttpStatusCode.OK)
+        }
+
         // GET /api/projects/{id}
         // load a single project's full design doc
         get("/projects/{id}") {
@@ -127,6 +180,33 @@ fun Route.projectRoutes() {
                     ?: throw NotFound("project")
 
             call.respond(detail)
+        }
+
+        // POST /api/projects/{id}/resubmit
+        // the team lead sends a rejected design doc back to the board for another review
+        post("/projects/{id}/resubmit") {
+            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
+            val detail =
+                ProjectDetail.from(projectID, currentUserID(), currentRole())
+                    ?: throw NotFound("project")
+            if (!detail.canManageTeam) throw InvalidAuthorization()
+            if (detail.project.status != ProjectStatus.REJECTED) {
+                return@post call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiError("Only rejected projects can be resubmitted"),
+                )
+            }
+
+            transaction {
+                Projects.update({ Projects.id eq projectID }) {
+                    it[status] = ProjectStatus.PENDING
+                    it[reviewNote] = null
+                    it[reviewedBy] = null
+                    it[submittedAt] = System.currentTimeMillis()
+                }
+            }
+
+            call.respond(ProjectDetail.from(projectID, currentUserID(), currentRole())!!)
         }
 
         // POST /api/projects/{id}/like
@@ -211,14 +291,43 @@ fun Route.projectRoutes() {
                 val teamIds =
                     Users.selectAll().where { Users.id inList requestedIds }.map { it[Users.id] }
                 if (leadID !in teamIds) return@transaction false
+                val ownerID =
+                    Projects.selectAll()
+                        .where { Projects.id eq projectID }
+                        .first()[Projects.ownerId]
+                val existing =
+                    ProjectMembers.selectAll()
+                        .where { ProjectMembers.projectID eq projectID }
+                        .associate { it[ProjectMembers.userID] to it[ProjectMembers.status] }
                 Projects.update({ Projects.id eq projectID }) {
                     it[teamLeadId] = leadID
                 }
-                ProjectMembers.deleteWhere { ProjectMembers.projectID eq projectID }
+                // Drop anyone no longer on the team, keeping the rest at their current invite state.
+                ProjectMembers.deleteWhere {
+                    (ProjectMembers.projectID eq projectID) and
+                        (ProjectMembers.userID notInList teamIds)
+                }
                 teamIds.forEach { memberID ->
-                    ProjectMembers.insert {
-                        it[ProjectMembers.projectID] = projectID
-                        it[ProjectMembers.userID] = memberID
+                    // The owner and team lead are always on the team; newly added members are
+                    // invited and existing members keep whatever state they already had.
+                    val desired =
+                        if (memberID == ownerID || memberID == leadID) MemberStatus.ACCEPTED
+                        else existing[memberID] ?: MemberStatus.PENDING
+                    if (memberID in existing) {
+                        if (existing[memberID] != desired) {
+                            ProjectMembers.update({
+                                (ProjectMembers.projectID eq projectID) and
+                                    (ProjectMembers.userID eq memberID)
+                            }) {
+                                it[status] = desired
+                            }
+                        }
+                    } else {
+                        ProjectMembers.insert {
+                            it[ProjectMembers.projectID] = projectID
+                            it[ProjectMembers.userID] = memberID
+                            it[status] = desired
+                        }
                     }
                 }
                 // Drop removed members from task assignments.
@@ -269,7 +378,11 @@ fun Route.projectRoutes() {
 
             transaction {
                 val teamIds = memberIdsOf(projectID).toSet()
-                replaceTasks(projectID, withRequiredMilestones(body.tasks), teamIds)
+                replaceTasks(
+                    projectID,
+                    withRequiredMilestones(body.tasks, BoardSettings.presentationDates()),
+                    teamIds,
+                )
             }
 
             call.respond(ProjectDetail.from(projectID, currentUserID(), currentRole())!!)

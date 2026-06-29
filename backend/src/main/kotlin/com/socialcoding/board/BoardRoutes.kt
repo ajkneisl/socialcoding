@@ -8,6 +8,7 @@ import com.socialcoding.projects.ProjectStatus
 import com.socialcoding.projects.Projects
 import com.socialcoding.db.Role
 import com.socialcoding.projects.pendingProjects
+import com.socialcoding.projects.syncMilestonesToAllProjects
 import com.socialcoding.projects.toUuidOrNull
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
@@ -16,6 +17,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.eq
@@ -32,6 +34,39 @@ fun Route.boardRoutes() {
                 if (currentRole() != Role.BOARD) throw InvalidAuthorization()
 
                 call.respond(pendingProjects())
+            }
+
+            // GET /api/board/settings
+            // the board-wide presentation dates
+            get("/settings") {
+                if (currentRole() != Role.BOARD) throw InvalidAuthorization()
+
+                call.respond(BoardSettings.presentationDates())
+            }
+
+            // PUT /api/board/settings
+            // set the presentation dates inherited by project milestones
+            put("/settings") {
+                if (currentRole() != Role.BOARD) throw InvalidAuthorization()
+
+                BoardSettings.setPresentationDates(call.receive())
+                call.respond(BoardSettings.presentationDates())
+            }
+
+            /**
+             * The outcome of a milestone sync.
+             *
+             * @param projects How many projects had their milestones refreshed.
+             */
+            @Serializable data class SyncResult(val projects: Int)
+
+            // POST /api/board/projects/sync-milestones
+            // re-add the MVP/Final milestones to every project with the current presentation dates
+            post("/projects/sync-milestones") {
+                if (currentRole() != Role.BOARD) throw InvalidAuthorization()
+
+                val count = syncMilestonesToAllProjects(BoardSettings.presentationDates())
+                call.respond(SyncResult(count))
             }
 
             /**

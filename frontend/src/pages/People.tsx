@@ -4,7 +4,6 @@ import { listPeople } from '../features/people/api'
 import type { Person } from '../features/people/types'
 import { PersonCard } from '../features/people/PersonCard'
 import { useAuth } from '../auth-context'
-import { Chip } from '../components/Chip'
 import { FormError } from '../components/FormError'
 import { SectionHead } from '../components/SectionHead'
 import { page } from '../components/styles'
@@ -39,15 +38,6 @@ export default function People() {
             .catch((e: Error) => setError(e.message))
     }, [])
 
-    const companies = useMemo(() => {
-        const counts = new Map<string, number>()
-        for (const p of people) {
-            const c = p.company?.trim()
-            if (c) counts.set(c, (counts.get(c) ?? 0) + 1)
-        }
-        return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    }, [people])
-
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase()
         if (!q) return people
@@ -55,7 +45,6 @@ export default function People() {
             (p) =>
                 p.name.toLowerCase().includes(q) ||
                 (p.joinedTerm ?? '').toLowerCase().includes(q) ||
-                (p.company ?? '').toLowerCase().includes(q) ||
                 String(p.gradYear ?? '').includes(q),
         )
     }, [people, query])
@@ -87,30 +76,10 @@ export default function People() {
                 </div>
             )}
 
-            {companies.length > 0 && (
-                <div className="mb-8">
-                    <h3 className="mb-3 text-[1.05rem]">Companies our members work at</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {companies.map(([name, count]) => (
-                            <Chip
-                                key={name}
-                                active={query === name}
-                                onClick={() => setQuery(query === name ? '' : name)}
-                            >
-                                {name}
-                                {count > 1 && (
-                                    <span className="font-semibold text-gold">{count}</span>
-                                )}
-                            </Chip>
-                        ))}
-                    </div>
-                </div>
-            )}
-
             <input
                 type="search"
                 className="mb-6 w-full max-w-[440px] px-4 py-[0.6rem]"
-                placeholder="Search by name, term, class year, or company…"
+                placeholder="Search by name, term, or class year…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Search members"

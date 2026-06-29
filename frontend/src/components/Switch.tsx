@@ -32,8 +32,12 @@ export function Switch({ checked, onChange, label, description, disabled }: Swit
                 />
             </button>
             <span className="leading-tight">
-                <span className="font-semibold">{label}</span>
-                {description && <span className="block text-text-soft">{description}</span>}
+                <span className="text-[0.9rem] font-medium">{label}</span>
+                {description && (
+                    <span className="mt-[0.15rem] block text-[0.8rem] text-text-soft">
+                        {description}
+                    </span>
+                )}
             </span>
         </div>
     )

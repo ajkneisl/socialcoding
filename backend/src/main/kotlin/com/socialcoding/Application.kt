@@ -2,6 +2,7 @@ package com.socialcoding
 
 import com.socialcoding.auth.Auth
 import com.socialcoding.auth.authRoutes
+import com.socialcoding.board.Settings
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.ApiError
 import com.socialcoding.db.ProjectMembers
@@ -63,6 +64,7 @@ fun initDb() {
             ProjectLikes,
             Events,
             EventAttendance,
+            Settings,
         )
     }
 }

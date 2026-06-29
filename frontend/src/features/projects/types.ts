@@ -25,6 +25,12 @@ export interface LikeResult {
     likes: number
 }
 
+/** Board-set presentation dates (YYYY-MM-DD) that project milestones inherit. */
+export interface PresentationDates {
+    mvpDate: string
+    finalDate: string
+}
+
 export interface ProjectTask {
     id: number
     name: string
@@ -54,6 +60,8 @@ export interface ProjectDetail {
     designDoc: DesignDoc
     teamLeadId: string
     members: ProjectMember[]
+    /** Members who have been invited but haven't accepted yet. */
+    pendingMembers: ProjectMember[]
     tasks: ProjectTask[]
     canEdit: boolean
     canManageTeam: boolean

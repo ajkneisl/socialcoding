@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { usePendingProjects, useReviewProject } from '../../features/board/queries'
 import { useProjects } from '../../features/projects/queries'
 import type { PendingProject, Project } from '../../features/projects/types'
+import { ReviewNote, StatusBadge } from '../../features/projects/StatusBadge'
 import { Avatar } from '../../components/Avatar'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
@@ -13,21 +14,31 @@ const row = 'border-b border-line px-1 py-[1.4rem] hover:bg-bg-raised'
 
 function PendingProjectCard({ pending }: { pending: PendingProject }) {
     const reviewProject = useReviewProject()
+    const [rejecting, setRejecting] = useState(false)
     const [note, setNote] = useState('')
 
     const { project, members, teamLeadID } = pending
     const lead = members.find((m) => m.id === teamLeadID)
 
-    function review(decision: 'approve' | 'reject') {
-        reviewProject.mutate({ id: project.id, decision, note: note || undefined })
+    function approve() {
+        reviewProject.mutate({ id: project.id, decision: 'approve' })
+    }
+
+    function reject() {
+        reviewProject.mutate({ id: project.id, decision: 'reject', note: note.trim() || undefined })
     }
 
     const busy = reviewProject.isPending
 
+    const rejected = project.status === 'REJECTED'
+
     return (
         <article className={row}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="m-0">{project.title}</h3>
+                <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="m-0">{project.title}</h3>
+                    <StatusBadge status={project.status} />
+                </div>
                 <span className="font-mono text-[0.8rem] text-text-soft">
                     {new Date(project.submittedAt).toLocaleDateString()}
                     {lead && <> · led by {lead.name}</>}
@@ -54,24 +65,45 @@ function PendingProjectCard({ pending }: { pending: PendingProject }) {
                     </>
                 )}
             </p>
-            <label className="mt-[0.6rem]">
-                Note to submitter <span className="text-text-soft">(optional)</span>
-                <input
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Feedback, conditions, next steps…"
-                    maxLength={1000}
-                />
-            </label>
             <FormError error={reviewProject.error?.message} className="mt-2" />
-            <div className="mt-[0.9rem] flex gap-[0.6rem]">
-                <Button disabled={busy} onClick={() => review('approve')}>
-                    Approve
-                </Button>
-                <Button variant="danger" disabled={busy} onClick={() => review('reject')}>
-                    Reject
-                </Button>
-            </div>
+            {rejected ? (
+                <div className="mt-[0.6rem] flex flex-col gap-[0.5rem]">
+                    {project.reviewNote && <ReviewNote note={project.reviewNote} className="m-0" />}
+                    <p className="m-0 font-mono text-[0.8rem] text-text-soft">
+                        Waiting for the team to make changes and resubmit.
+                    </p>
+                </div>
+            ) : rejecting ? (
+                <>
+                    <label className="mt-[0.6rem]">
+                        Feedback to submitter <span className="text-text-soft">(optional)</span>
+                        <textarea
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder="What should the team change before resubmitting?"
+                            rows={3}
+                            maxLength={1000}
+                        />
+                    </label>
+                    <div className="mt-[0.9rem] flex gap-[0.6rem]">
+                        <Button variant="ghost" disabled={busy} onClick={() => setRejecting(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="danger" disabled={busy} onClick={reject}>
+                            {busy ? 'Sending…' : 'Confirm rejection'}
+                        </Button>
+                    </div>
+                </>
+            ) : (
+                <div className="mt-[0.9rem] flex gap-[0.6rem]">
+                    <Button disabled={busy} onClick={approve}>
+                        Approve
+                    </Button>
+                    <Button variant="danger" disabled={busy} onClick={() => setRejecting(true)}>
+                        Reject
+                    </Button>
+                </div>
+            )}
         </article>
     )
 }
@@ -109,10 +141,12 @@ export default function BoardProjects() {
 
     return (
         <>
-            <SectionHead title="Pending projects">Review project's design docs.</SectionHead>
+            <SectionHead title="Projects awaiting approval">
+                Review design docs awaiting a decision, plus ones sent back for changes.
+            </SectionHead>
             <FormError error={error?.message} />
             {pending.length === 0 ? (
-                <p className="text-text-soft">Queue is empty. Nice work.</p>
+                <p className="text-text-soft">Nothing awaiting approval. Nice work.</p>
             ) : (
                 <div className="border-t border-line">
                     {pending.map((p) => (

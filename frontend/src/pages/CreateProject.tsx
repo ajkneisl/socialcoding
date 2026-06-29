@@ -2,7 +2,7 @@ import {useEffect, useMemo, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {usePeople} from '../features/people/queries'
 import type {Person} from '../features/people/types'
-import {useCreateProject} from '../features/projects/queries'
+import {useCreateProject, usePresentationDates} from '../features/projects/queries'
 import {
     DESIGN_SECTIONS,
     DeliverablesEditor,
@@ -43,6 +43,7 @@ export default function CreateProject() {
     const {user, token, loading} = useAuth()
     const navigate = useNavigate()
     const {data: people = []} = usePeople()
+    const {data: presentationDates} = usePresentationDates()
     const createProject = useCreateProject()
 
     const [step, setStep] = useState(0)
@@ -227,7 +228,12 @@ export default function CreateProject() {
                             presentation and a final presentation; the board may adjust the
                             timeline.
                         </p>
-                        <DeliverablesEditor tasks={tasks} team={team} onChange={setTasks}/>
+                        <DeliverablesEditor
+                            tasks={tasks}
+                            team={team}
+                            onChange={setTasks}
+                            presentationDates={presentationDates}
+                        />
                     </>
                 )}
 

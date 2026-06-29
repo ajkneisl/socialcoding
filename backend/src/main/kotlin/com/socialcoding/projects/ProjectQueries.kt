@@ -1,5 +1,7 @@
 package com.socialcoding.projects
 
+import com.socialcoding.board.PresentationDates
+import com.socialcoding.db.MemberStatus
 import com.socialcoding.db.ProjectMember
 import com.socialcoding.db.ProjectMembers
 import com.socialcoding.db.Users
@@ -10,6 +12,7 @@ import org.jetbrains.exposed.v1.core.alias
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -38,20 +41,80 @@ fun projectsWithOwners() =
         .join(ProjectLead, JoinType.LEFT, Projects.teamLeadId, ProjectLead[Users.id])
         .selectAll()
 
-/** Must be inside a transaction. */
+/** The accepted team members of a project. Must be inside a transaction. */
 fun memberIdsOf(projectId: Uuid): List<Uuid> =
     ProjectMembers.selectAll()
-        .where { ProjectMembers.projectID eq projectId }
+        .where {
+            (ProjectMembers.projectID eq projectId) and
+                (ProjectMembers.status eq MemberStatus.ACCEPTED)
+        }
         .map { it[ProjectMembers.userID] }
 
-/** Every design doc carries these two milestones; they can't be removed. */
-fun withRequiredMilestones(tasks: List<TaskInput>): List<TaskInput> {
-    val required = listOf("MVP Presentation", "Final Presentation")
-    val missing = required.filter { name ->
-        tasks.none { it.name.trim().equals(name, ignoreCase = true) }
+/** Users invited to a project who haven't accepted yet. Must be inside a transaction. */
+fun pendingMemberIdsOf(projectId: Uuid): List<Uuid> =
+    ProjectMembers.selectAll()
+        .where {
+            (ProjectMembers.projectID eq projectId) and
+                (ProjectMembers.status eq MemberStatus.PENDING)
+        }
+        .map { it[ProjectMembers.userID] }
+
+/**
+ * Every design doc carries the MVP and Final Presentation milestones; they can't be removed and
+ * their due dates are inherited from the board's [dates] rather than set by the team. Any submitted
+ * task matching a milestone name is normalized to the milestone (name, flag, board date); missing
+ * milestones are appended.
+ */
+fun withRequiredMilestones(tasks: List<TaskInput>, dates: PresentationDates): List<TaskInput> {
+    val required = linkedMapOf(
+        "MVP Presentation" to dates.mvpDate,
+        "Final Presentation" to dates.finalDate,
+    )
+    val normalized = tasks.filter { it.name.isNotBlank() }.map { task ->
+        val match = required.keys.firstOrNull { it.equals(task.name.trim(), ignoreCase = true) }
+        if (match != null) task.copy(name = match, milestone = true, dueDate = required.getValue(match))
+        else task
     }
-    return tasks.filter { it.name.isNotBlank() } +
-        missing.map { TaskInput(name = it, milestone = true) }
+    val missing = required.filterKeys { name -> normalized.none { it.name.equals(name, ignoreCase = true) } }
+    return normalized + missing.map { (name, date) -> TaskInput(name = name, dueDate = date, milestone = true) }
+}
+
+/**
+ * Re-applies the required presentation milestones to every project, stamping them with the board's
+ * current [dates] — used at the start of a new semester. Existing deliverables are preserved; the
+ * MVP/Final milestones are added if missing and their due dates refreshed. Returns the number of
+ * projects touched.
+ */
+fun syncMilestonesToAllProjects(dates: PresentationDates): Int = transaction {
+    val projectIds = Projects.selectAll().map { it[Projects.id] }
+    projectIds.forEach { projectId ->
+        val inputs = currentTaskInputs(projectId)
+        val teamIds = memberIdsOf(projectId).toSet()
+        replaceTasks(projectId, withRequiredMilestones(inputs, dates), teamIds)
+    }
+    projectIds.size
+}
+
+/**
+ * Loads a project's current tasks as [TaskInput]s, with dependencies expressed as indices into the
+ * returned list (the inverse of [replaceTasks]). Must be inside a transaction.
+ */
+fun currentTaskInputs(projectId: Uuid): List<TaskInput> {
+    val rows =
+        ProjectTasks.selectAll()
+            .where { ProjectTasks.projectID eq projectId }
+            .orderBy(ProjectTasks.dueDate)
+            .map { it.toTask() }
+    val indexById = rows.mapIndexed { i, t -> t.id to i }.toMap()
+    return rows.map { t ->
+        TaskInput(
+            name = t.name,
+            assigneeIds = t.assigneeIds,
+            dueDate = t.dueDate,
+            dependsOn = t.dependsOn.mapNotNull { indexById[it] },
+            milestone = t.milestone,
+        )
+    }
 }
 
 /**
@@ -82,11 +145,17 @@ fun replaceTasks(projectId: Uuid, tasks: List<TaskInput>, teamIds: Set<Uuid>) {
     }
 }
 
-/** Every project [userId] owns, leads, or is a member of, regardless of status. */
+/**
+ * Every project [userId] owns, leads, or has accepted membership on, regardless of board status.
+ * Pending invites are excluded; those surface separately via [invitesForUser].
+ */
 fun projectsForUser(userId: Uuid): List<Project> = transaction {
     val memberOf =
         ProjectMembers.selectAll()
-            .where { ProjectMembers.userID eq userId }
+            .where {
+                (ProjectMembers.userID eq userId) and
+                    (ProjectMembers.status eq MemberStatus.ACCEPTED)
+            }
             .map { it[ProjectMembers.projectID] }
     projectsWithOwners()
         .where {
@@ -94,6 +163,22 @@ fun projectsForUser(userId: Uuid): List<Project> = transaction {
                 (Projects.teamLeadId eq userId) or
                 (Projects.id inList memberOf)
         }
+        .orderBy(Projects.submittedAt)
+        .map { it.toProject() }
+}
+
+/** Projects [userId] has a pending invite to. */
+fun invitesForUser(userId: Uuid): List<Project> = transaction {
+    val invitedTo =
+        ProjectMembers.selectAll()
+            .where {
+                (ProjectMembers.userID eq userId) and
+                    (ProjectMembers.status eq MemberStatus.PENDING)
+            }
+            .map { it[ProjectMembers.projectID] }
+    if (invitedTo.isEmpty()) return@transaction emptyList()
+    projectsWithOwners()
+        .where { Projects.id inList invitedTo }
         .orderBy(Projects.submittedAt)
         .map { it.toProject() }
 }
@@ -157,11 +242,16 @@ fun membersByIds(ids: Collection<Uuid>): List<ProjectMember> =
         .orderBy(Users.name)
         .map { ProjectMember(it[Users.id].toString(), it[Users.name], it[Users.avatarUrl]) }
 
-/** Every pending project paired with its team, for the board review queue. */
+/**
+ * Every project that isn't approved yet — those awaiting board review and those the board rejected
+ * (which the team may still resubmit) — paired with its team, for the board panel. Pending projects
+ * come first so the actionable review queue stays on top.
+ */
 fun pendingProjects(): List<PendingProject> = transaction {
     projectsWithOwners()
-        .where { Projects.status eq ProjectStatus.PENDING }
+        .where { Projects.status neq ProjectStatus.APPROVED }
         .orderBy(Projects.submittedAt)
+        .sortedBy { it[Projects.status] != ProjectStatus.PENDING }
         .map { row ->
             val project = row.toProject()
             val leadID = row[Projects.teamLeadId] ?: row[Projects.ownerId]

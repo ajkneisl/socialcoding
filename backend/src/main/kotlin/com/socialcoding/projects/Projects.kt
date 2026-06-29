@@ -99,7 +99,8 @@ fun ResultRow.toProject(): Project {
  * @param project The project itself.
  * @param designDoc The design doc for the project.
  * @param teamLeadID The ID of the team lead user.
- * @param members All members of the project.
+ * @param members All accepted members of the project.
+ * @param pendingMembers Users invited to the project who haven't accepted yet.
  * @param tasks All current tasks for the project.
  * @param canEdit If the requesting user may edit the project.
  * @param canManageTeam If the requesting user may manage the team.
@@ -110,6 +111,7 @@ data class ProjectDetail(
     val designDoc: DesignDocContent,
     val teamLeadID: String,
     val members: List<ProjectMember>,
+    val pendingMembers: List<ProjectMember>,
     val tasks: List<ProjectTask>,
     val canEdit: Boolean,
     val canManageTeam: Boolean,
@@ -136,6 +138,7 @@ data class ProjectDetail(
             }
 
             val members = membersByIds(memberIds + leadId)
+            val pendingMembers = membersByIds(pendingMemberIdsOf(projectID))
 
             val tasks =
                 ProjectTasks.selectAll()
@@ -148,6 +151,7 @@ data class ProjectDetail(
                 designDoc = decodeDesignDoc(row[Projects.designDoc]),
                 teamLeadID = leadId.toString(),
                 members = members,
+                pendingMembers = pendingMembers,
                 tasks = tasks,
                 canEdit = onTeam || isBoard,
                 canManageTeam = userID == leadId || isBoard,
