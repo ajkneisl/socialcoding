@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { useEvent } from '../features/events/queries'
-import { AnchorButton, LinkButton } from '../components/Button'
+import { checkInClosed } from '../features/events/util'
+import { AnchorButton, Button, LinkButton } from '../components/Button'
 import { ExternalLinkIcon } from '../components/ExternalLinkIcon'
 import { Markdown } from '../components/Markdown'
 import { PageMessage } from '../components/PageMessage'
@@ -67,9 +68,16 @@ export default function EventDetail() {
 
                 {(event.burrowUrl || event.attendance) && (
                     <div className="mt-8 flex flex-wrap gap-3">
-                        {event.attendance && (
-                            <LinkButton to={`/events/${event.id}/attend`}>Check in</LinkButton>
-                        )}
+                        {event.attendance &&
+                            (checkInClosed(event.startsAt) ? (
+                                <Button disabled title="Check-in has closed">
+                                    Check in
+                                </Button>
+                            ) : (
+                                <LinkButton to={`/events/${event.id}/attend`}>
+                                    Check in
+                                </LinkButton>
+                            ))}
                         {event.burrowUrl && (
                             <AnchorButton
                                 variant={event.attendance ? 'ghost' : 'primary'}
