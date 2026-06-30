@@ -6,8 +6,8 @@ import type {Project} from './types'
 const heart = (filled: boolean) => (
     <svg
         viewBox="0 0 24 24"
-        width="15"
-        height="15"
+        width="17"
+        height="17"
         fill={filled ? 'currentColor' : 'none'}
         stroke="currentColor"
         strokeWidth="2"
@@ -15,11 +15,12 @@ const heart = (filled: boolean) => (
         aria-hidden="true"
     >
         <path
-            d="M12 21s-7.5-4.6-10-9.2C.6 9 1.7 5.5 5 5.5c2 0 3.2 1.2 4 2.3.8-1.1 2-2.3 4-2.3 3.3 0 4.4 3.5 3 6.3-2.5 4.6-10 9.2-10 9.2z"/>
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
     </svg>
 )
 
-const base = 'inline-flex items-center gap-[0.35rem] font-mono text-[0.8rem]'
+const base =
+    'inline-flex items-center gap-[0.45rem] rounded-full border px-[0.8rem] py-[0.4rem] font-mono text-[0.95rem] font-semibold'
 
 /** A heart with the project's like count. Interactive when signed in; a static tally otherwise. */
 export function LikeButton({project}: { project: Project }) {
@@ -28,7 +29,10 @@ export function LikeButton({project}: { project: Project }) {
 
     if (!user) {
         return (
-            <span className={`${base} text-text-faint`} title="Sign in to like">
+            <span
+                className={`${base} border-line text-text-faint`}
+                title="Sign in to like"
+            >
                 {heart(false)}
                 {project.likes}
             </span>
@@ -43,10 +47,12 @@ export function LikeButton({project}: { project: Project }) {
             aria-pressed={project.liked}
             aria-label={project.liked ? 'Remove like' : 'Like project'}
             className={`${base} cursor-pointer transition-colors disabled:opacity-60 ${
-                project.liked ? 'text-gold' : 'text-text-faint hover:text-gold'
+                project.liked
+                    ? 'border-gold bg-gold/10 text-gold'
+                    : 'border-line text-text-soft hover:border-gold hover:bg-gold/10 hover:text-gold'
             }`}
         >
-            {toggle.isPending ? <Spinner className="h-[15px] w-[15px]" /> : heart(project.liked)}
+            {toggle.isPending ? <Spinner className="h-[20px] w-[20px]" /> : heart(project.liked)}
             {project.likes}
         </button>
     )
