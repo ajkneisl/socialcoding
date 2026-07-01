@@ -49,43 +49,52 @@ export default function ProjectShowcase() {
                 <Link to="/projects">← Back to projects</Link>
             </p>
 
-            <div className="mb-8 max-w-[720px]">
-                <Eyebrow>Project</Eyebrow>
-                <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="m-0">{project.title}</h2>
-                    <ActiveBadge active={project.active} />
+            <div className="mb-8 flex max-w-[720px] items-start justify-between gap-5">
+                <div className="min-w-0">
+                    <Eyebrow>Project</Eyebrow>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="m-0">{project.title}</h2>
+                        <ActiveBadge active={project.active} />
+                    </div>
+                    <p className="my-3 text-text-soft">{project.description}</p>
+                    <div className="flex flex-wrap items-center gap-4 font-mono text-[0.8rem] text-text-faint">
+                        <LikeButton project={project} />
+                        <span>Created {new Date(project.submittedAt).toLocaleDateString()}</span>
+                        {project.siteUrl && (
+                            <a
+                                href={project.siteUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={externalLink}
+                            >
+                                {project.siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
+                            </a>
+                        )}
+                        {project.repoUrl ? (
+                            <a
+                                href={project.repoUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={externalLink}
+                            >
+                                {githubIcon}
+                                GitHub
+                            </a>
+                        ) : (
+                            <span className="inline-flex items-center gap-[0.4rem] text-text-faint">
+                                {githubIcon}
+                                No repository
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <p className="my-3 text-text-soft">{project.description}</p>
-                <div className="flex flex-wrap items-center gap-4 font-mono text-[0.8rem] text-text-faint">
-                    <LikeButton project={project} />
-                    <span>Created {new Date(project.submittedAt).toLocaleDateString()}</span>
-                    {project.siteUrl && (
-                        <a
-                            href={project.siteUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={externalLink}
-                        >
-                            {project.siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
-                        </a>
-                    )}
-                    {project.repoUrl ? (
-                        <a
-                            href={project.repoUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={externalLink}
-                        >
-                            {githubIcon}
-                            GitHub
-                        </a>
-                    ) : (
-                        <span className="inline-flex items-center gap-[0.4rem] text-text-faint">
-                            {githubIcon}
-                            No repository
-                        </span>
-                    )}
-                </div>
+                {project.imageUrl && (
+                    <img
+                        src={project.imageUrl}
+                        alt=""
+                        className="h-24 w-24 shrink-0 rounded-xl border border-line bg-bg-raised object-contain p-2"
+                    />
+                )}
             </div>
 
             <div className={`${card} max-w-[720px]`}>

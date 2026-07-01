@@ -133,6 +133,7 @@ type DesignUpdate = {
     title: string
     description: string
     repoUrl?: string
+    imageUrl?: string
     designDoc: DesignDoc
 }
 

@@ -11,6 +11,7 @@ export function TeamPicker({
                                memberIds,
                                leadId,
                                lockedIds = [],
+                               pendingIds = [],
                                onChange,
                            }: {
     people: Person[]
@@ -18,6 +19,8 @@ export function TeamPicker({
     leadId: string
     /** Members that can't be removed (e.g. yourself while creating). */
     lockedIds?: string[]
+    /** Members whose invite hasn't been accepted yet, badged as pending. */
+    pendingIds?: string[]
     onChange: (memberIds: string[], leadId: string) => void
 }) {
     const [query, setQuery] = useState('')
@@ -77,7 +80,10 @@ export function TeamPicker({
                                 <span className="font-medium">{person.name}</span>
                             </div>
 
-                            <div className="flex flex-row gap-2">
+                            <div className="flex flex-row items-center gap-2">
+                                {!isLead && pendingIds.includes(id) && (
+                                    <Badge variant="pending">invite pending</Badge>
+                                )}
                                 {isLead ? (
                                     <Badge variant="board">team lead</Badge>
                                 ) : (

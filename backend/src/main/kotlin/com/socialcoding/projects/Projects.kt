@@ -18,6 +18,7 @@ object Projects : Table("projects") {
     val active = bool("active").default(true)
     val repoUrl = varchar("repo_url", 512).nullable()
     val siteUrl = varchar("site_url", 512).nullable()
+    val imageUrl = varchar("image_url", 512).nullable()
     val ownerId = uuid("owner_id").references(Users.id)
     val teamLeadId = uuid("team_lead_id").references(Users.id).nullable()
     val designDoc = text("design_doc").nullable()
@@ -44,6 +45,7 @@ enum class ProjectStatus {
  * @param description The description.
  * @param repoUrl The optional GitHub repository URL.
  * @param siteUrl The optional site URL.
+ * @param imageUrl The optional cover image.
  * @param status The board status of the project.
  * @param active If the project is active.
  * @param teamLeadName The name of the project's team lead (the owner if none is set).
@@ -60,6 +62,7 @@ data class Project(
     val description: String,
     val repoUrl: String?,
     val siteUrl: String?,
+    val imageUrl: String? = null,
     val status: ProjectStatus,
     val active: Boolean,
     val teamLeadName: String,
@@ -87,6 +90,7 @@ fun ResultRow.toProject(): Project {
             if (leadJoined) this[ProjectLead[Users.avatarUrl]] else this[Users.avatarUrl],
         repoUrl = this[Projects.repoUrl],
         siteUrl = this[Projects.siteUrl],
+        imageUrl = this[Projects.imageUrl],
         status = this[Projects.status],
         submittedAt = this[Projects.submittedAt],
         reviewNote = this[Projects.reviewNote],

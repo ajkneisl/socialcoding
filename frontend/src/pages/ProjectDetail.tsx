@@ -30,6 +30,7 @@ import { Button } from '../components/Button'
 import { Eyebrow } from '../components/Eyebrow'
 import { FormActions } from '../components/FormActions'
 import { FormError } from '../components/FormError'
+import { ImageUpload } from '../components/ImageUpload'
 import { NoticeCard } from '../components/NoticeCard'
 import { PageMessage } from '../components/PageMessage'
 import { card, page } from '../components/styles'
@@ -57,7 +58,7 @@ function BoardReview({ detail }: { detail: Detail }) {
     const error = reviewProject.error?.message ?? null
 
     return (
-        <div className={`${card} mb-10 flex flex-col gap-[0.9rem]`}>
+        <div className={`${card} mb-8 flex flex-col gap-[0.9rem]`}>
             <h3 className="m-0">Board review</h3>
             <p className="m-0 text-text-soft">This design doc is awaiting a decision.</p>
             <FormError error={error} />
@@ -123,8 +124,10 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
     const [memberIds, setMemberIds] = useState<string[]>([])
     const [leadId, setLeadId] = useState(detail.teamLeadId)
 
+    // Seed with accepted members *and* outstanding invites, so re-saving the team keeps pending
+    // invitees instead of silently dropping them.
     function startEditing() {
-        setMemberIds(detail.members.map((m) => m.id))
+        setMemberIds([...detail.members, ...detail.pendingMembers].map((m) => m.id))
         setLeadId(detail.teamLeadId)
         updateMembers.reset()
         setEditing(true)
@@ -143,7 +146,7 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
     const error = updateMembers.error?.message ?? null
 
     return (
-        <div className="mb-10">
+        <div className={card}>
             <div className={sectionHead}>
                 <h3 className="m-0">Team</h3>
                 {detail.canManageTeam && !editing && (
@@ -159,10 +162,15 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
             )}
             {editing ? (
                 <div className="flex flex-col gap-[0.9rem]">
+                    <p className="m-0 text-[0.85rem] text-text-soft">
+                        Search people to invite them. New teammates get a pending invite they accept
+                        from their account; promote anyone to hand off the team lead role.
+                    </p>
                     <TeamPicker
                         people={people}
                         memberIds={memberIds}
                         leadId={leadId}
+                        pendingIds={detail.pendingMembers.map((m) => m.id)}
                         onChange={(ids, lead) => {
                             setMemberIds(ids)
                             setLeadId(lead)
@@ -217,12 +225,14 @@ function DesignDocSections({ detail }: { detail: Detail }) {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [repoUrl, setRepoUrl] = useState('')
+    const [imageUrl, setImageUrl] = useState('')
     const [doc, setDoc] = useState<DesignDoc>(detail.designDoc)
 
     function startEditing() {
         setTitle(detail.project.title)
         setDescription(detail.project.description)
         setRepoUrl(detail.project.repoUrl ?? '')
+        setImageUrl(detail.project.imageUrl ?? '')
         setDoc(detail.designDoc)
         updateDesign.reset()
         setEditing(true)
@@ -234,6 +244,7 @@ function DesignDocSections({ detail }: { detail: Detail }) {
                 title: title.trim(),
                 description: description.trim(),
                 repoUrl: repoUrl.trim() || undefined,
+                imageUrl: imageUrl || undefined,
                 designDoc: doc,
             })
             setEditing(false)
@@ -246,7 +257,7 @@ function DesignDocSections({ detail }: { detail: Detail }) {
     const error = updateDesign.error?.message ?? null
 
     return (
-        <div className="mb-10">
+        <div className={card}>
             <div className={sectionHead}>
                 <h3 className="m-0">Design doc</h3>
                 {detail.canEdit && !editing && (
@@ -284,6 +295,10 @@ function DesignDocSections({ detail }: { detail: Detail }) {
                             onChange={(e) => setRepoUrl(e.target.value)}
                             placeholder="https://github.com/…"
                         />
+                    </label>
+                    <label>
+                        Cover image <span className="text-text-soft">(optional)</span>
+                        <ImageUpload value={imageUrl} onChange={setImageUrl} />
                     </label>
                     {DESIGN_SECTIONS.map((section) => (
                         <div key={section.id}>
@@ -351,7 +366,7 @@ function DeliverablesSection({ detail }: { detail: Detail }) {
     const error = updateTasks.error?.message ?? null
 
     return (
-        <div className="mb-10">
+        <div className={card}>
             <div className={sectionHead}>
                 <h3 className="m-0">Timeline &amp; deliverables</h3>
                 {detail.canEdit && !editing && (
@@ -426,25 +441,42 @@ export default function ProjectDetail() {
 
     return (
         <section className={page}>
-            <div className="mb-7 max-w-[680px]">
-                <Eyebrow>Design doc</Eyebrow>
-                <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="m-0">{detail.project.title}</h2>
-                    <StatusBadge status={detail.project.status} />
-                </div>
-                <p className="my-2 text-text-soft">{detail.project.description}</p>
-                <p className="my-2 font-mono text-[0.8rem] text-text-soft">
-                    {lead && <>led by {lead.name} · </>}
-                    submitted {new Date(detail.project.submittedAt).toLocaleDateString()}
-                    {detail.project.repoUrl && (
-                        <>
-                            {' · '}
-                            <a href={detail.project.repoUrl} target="_blank" rel="noreferrer">
-                                GitHub ↗
-                            </a>
-                        </>
+            <div className={`${card} mb-8`}>
+                <div className="flex items-start justify-between gap-5">
+                    <div className="min-w-0">
+                        <Eyebrow>Design doc</Eyebrow>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <h2 className="m-0">{detail.project.title}</h2>
+                            <StatusBadge status={detail.project.status} />
+                        </div>
+                        <p className="my-2 max-w-[68ch] text-text-soft">
+                            {detail.project.description}
+                        </p>
+                        <p className="my-2 font-mono text-[0.8rem] text-text-soft">
+                            {lead && <>led by {lead.name} · </>}
+                            submitted {new Date(detail.project.submittedAt).toLocaleDateString()}
+                            {detail.project.repoUrl && (
+                                <>
+                                    {' · '}
+                                    <a
+                                        href={detail.project.repoUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        GitHub ↗
+                                    </a>
+                                </>
+                            )}
+                        </p>
+                    </div>
+                    {detail.project.imageUrl && (
+                        <img
+                            src={detail.project.imageUrl}
+                            alt=""
+                            className="h-20 w-20 shrink-0 rounded-xl border border-line bg-bg-raised object-contain p-2"
+                        />
                     )}
-                </p>
+                </div>
                 {detail.project.status === 'REJECTED' && <RejectedNotice detail={detail} />}
             </div>
 
@@ -452,8 +484,10 @@ export default function ProjectDetail() {
                 <BoardReview detail={detail} />
             )}
 
-            <DeliverablesSection detail={detail} />
-            <TeamSection detail={detail} people={people} />
+            <div className="mb-8 grid gap-8 md:grid-cols-2 md:items-start">
+                <DeliverablesSection detail={detail} />
+                <TeamSection detail={detail} people={people} />
+            </div>
             <DesignDocSections detail={detail} />
         </section>
     )
