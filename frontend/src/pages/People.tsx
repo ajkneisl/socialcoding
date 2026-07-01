@@ -31,11 +31,13 @@ export default function People() {
     const [people, setPeople] = useState<Person[]>([])
     const [query, setQuery] = useState('')
     const [error, setError] = useState<string | null>(null)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         listPeople()
             .then(setPeople)
             .catch((e: Error) => setError(e.message))
+            .finally(() => setLoading(false))
     }, [])
 
     const filtered = useMemo(() => {
@@ -107,8 +109,15 @@ export default function People() {
                     </div>
                 </div>
             )}
-            {!error && filtered.length === 0 && (
-                <p className="text-text-soft">No members listed.</p>
+            {loading ? (
+                <p className="text-text-soft">Loading…</p>
+            ) : (
+                !error &&
+                filtered.length === 0 && (
+                    <p className="text-text-soft">
+                        {query ? 'No members match your search.' : 'No members listed.'}
+                    </p>
+                )
             )}
         </section>
     )

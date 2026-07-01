@@ -31,8 +31,11 @@ export default function EventDetail() {
 
     return (
         <section className={page}>
-            <Link to="/events" className="font-mono text-[0.8rem]">
-                ← All events
+            <Link
+                to="/events"
+                className="mb-[0.6rem] inline-flex items-center gap-[0.6rem] font-mono text-[0.8rem] font-semibold uppercase tracking-[0.16em] text-gold no-underline hover:no-underline"
+            >
+                ←<span>Events</span>
             </Link>
 
             <article className="mt-6 max-w-[760px]">

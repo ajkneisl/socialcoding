@@ -1,7 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { Badge } from '../components/Badge'
-import { Eyebrow } from '../components/Eyebrow'
 import { FormError } from '../components/FormError'
 import { Spinner } from '../components/Spinner'
 import { card, page } from '../components/styles'
@@ -45,13 +44,14 @@ export default function ProjectShowcase() {
 
     return (
         <section className={page}>
-            <p className="mb-5 font-mono text-[0.85rem] text-text-faint">
-                <Link to="/projects">← Back to projects</Link>
-            </p>
-
             <div className="mb-8 flex max-w-[720px] items-start justify-between gap-5">
                 <div className="min-w-0">
-                    <Eyebrow>Project</Eyebrow>
+                    <Link
+                        to="/projects"
+                        className="mb-[0.6rem] inline-flex items-center gap-[0.6rem] font-mono text-[0.8rem] font-semibold uppercase tracking-[0.16em] text-gold no-underline hover:no-underline"
+                    >
+                        ←<span>Projects</span>
+                    </Link>
                     <div className="flex flex-wrap items-center gap-3">
                         <h2 className="m-0">{project.title}</h2>
                         <ActiveBadge active={project.active} />

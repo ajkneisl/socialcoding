@@ -18,7 +18,7 @@ export default function Projects() {
         <section className={page}>
             <div className="flex flex-row items-center justify-between">
                 <SectionHead eyebrow="Projects" title="Active projects">
-                    Start/Manage your project(s) here.
+                    View active projects from Social Coding members.
                 </SectionHead>
 
                 <LinkButton

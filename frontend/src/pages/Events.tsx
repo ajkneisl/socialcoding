@@ -89,8 +89,7 @@ export default function Events() {
     return (
         <section className={page}>
             <SectionHead eyebrow="Events" title="What's happening">
-                Talks, socials, and milestones from across Social Coding. Days with events are marked
-                on the calendar.
+                Meetings and events from across Social Coding.
             </SectionHead>
 
             <FormError error={error?.message} />
