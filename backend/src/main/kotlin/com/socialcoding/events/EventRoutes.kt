@@ -124,7 +124,12 @@ fun Route.eventRoutes() {
                 if (currentRole() != Role.BOARD) throw InvalidAuthorization()
 
                 val eventID = call.parameters["id"]?.toLongOrNull() ?: throw NotFound("event")
-                val deleted = transaction { Events.deleteWhere { Events.id eq eventID } }
+                val deleted =
+                    transaction {
+                        // Clear check-ins first; they reference the event via a foreign key.
+                        EventAttendance.deleteWhere { EventAttendance.eventID eq eventID }
+                        Events.deleteWhere { Events.id eq eventID }
+                    }
                 if (deleted == 0) throw NotFound("event")
 
                 call.respond(HttpStatusCode.OK)

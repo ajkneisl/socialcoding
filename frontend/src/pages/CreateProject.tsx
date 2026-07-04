@@ -168,7 +168,6 @@ export default function CreateProject() {
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
                                 maxLength={200}
-                                placeholder="e.g. Computer Vision Wheelchair"
                             />
                         </label>
                         <label>

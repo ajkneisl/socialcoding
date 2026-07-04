@@ -11,17 +11,14 @@ export default function BoardAnalytics() {
 
     return (
         <>
-            <SectionHead title="Attendance analytics">
-                Attendees checked in per event, across events with attendance tracking enabled.
-            </SectionHead>
-
+            <SectionHead title="Attendance analytics" />
             <FormError error={error?.message} />
 
             {isLoading ? (
                 <p className="text-text-soft">Loading…</p>
             ) : summary.length === 0 ? (
                 <p className="text-text-soft">
-                    No attendance-enabled events yet. Turn on attendance when creating an event.
+                    No events yet.
                 </p>
             ) : (
                 <>

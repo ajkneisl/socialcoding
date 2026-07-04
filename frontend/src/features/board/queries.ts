@@ -1,18 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth-context'
+import type { Role, User } from '../auth/types'
 import { projectKeys } from '../projects/queries'
 import type { PresentationDates } from '../projects/types'
 import {
     getBoardSettings,
+    listBoardMembers,
     listPendingProjects,
     reviewProject,
     syncMilestones,
     updateBoardSettings,
+    updateMemberRole,
+    updateMemberTitle,
 } from './api'
 
 export const boardKeys = {
     pending: ['board', 'pending'] as const,
     settings: ['board', 'settings'] as const,
+    members: ['board', 'members'] as const,
 }
 
 export function usePendingProjects() {
@@ -61,6 +66,43 @@ export function useUpdateBoardSettings() {
         onSuccess: (updated) => {
             queryClient.setQueryData(boardKeys.settings, updated)
             queryClient.setQueryData(projectKeys.presentationDates, updated)
+        },
+    })
+}
+
+export function useBoardMembers() {
+    const { user, token } = useAuth()
+    return useQuery({
+        queryKey: boardKeys.members,
+        queryFn: () => listBoardMembers(token!),
+        enabled: !!token && user?.role === 'BOARD',
+    })
+}
+
+export function useUpdateMemberRole() {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, role }: { id: string; role: Role }) =>
+            updateMemberRole(token!, id, role),
+        onSuccess: (updated) => {
+            queryClient.setQueryData<User[]>(boardKeys.members, (prev) =>
+                prev?.map((u) => (u.id === updated.id ? updated : u)),
+            )
+        },
+    })
+}
+
+export function useUpdateMemberTitle() {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, title }: { id: string; title: string | null }) =>
+            updateMemberTitle(token!, id, title),
+        onSuccess: (updated) => {
+            queryClient.setQueryData<User[]>(boardKeys.members, (prev) =>
+                prev?.map((u) => (u.id === updated.id ? updated : u)),
+            )
         },
     })
 }

@@ -4,6 +4,7 @@ import Account from './pages/Account'
 import BoardAnalytics from './pages/board/Analytics'
 import BoardLayout from './pages/board/BoardLayout'
 import BoardEvents from './pages/board/Events'
+import BoardMembers from './pages/board/Members'
 import BoardOverview from './pages/board/Overview'
 import BoardProjects from './pages/board/Projects'
 import BoardSettings from './pages/board/Settings'
@@ -36,6 +37,7 @@ export default function App() {
                     <Route path="projects" element={<BoardProjects />} />
                     <Route path="events" element={<BoardEvents />} />
                     <Route path="analytics" element={<BoardAnalytics />} />
+                    <Route path="members" element={<BoardMembers />} />
                     <Route path="settings" element={<BoardSettings />} />
                 </Route>
             </Route>

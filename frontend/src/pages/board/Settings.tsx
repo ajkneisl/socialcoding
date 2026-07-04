@@ -22,10 +22,7 @@ function SettingsForm({ initial }: { initial: PresentationDates }) {
 
     function save(e: FormEvent) {
         e.preventDefault()
-        update.mutate(
-            { mvpDate, finalDate },
-            { onSuccess: (saved) => setPersisted(saved) },
-        )
+        update.mutate({ mvpDate, finalDate }, { onSuccess: (saved) => setPersisted(saved) })
     }
 
     return (
@@ -33,7 +30,7 @@ function SettingsForm({ initial }: { initial: PresentationDates }) {
             <form className={`${card} flex flex-col gap-[0.9rem]`} onSubmit={save}>
                 <div>
                     <h3 className="m-0">Presentation dates</h3>
-                    <p className="m-0 text-text-soft">
+                    <p className="m-0 mt-2 text-text-soft">
                         Every project's MVP and Final Presentation milestones inherit these dates.
                         Teams can't change them.
                     </p>
@@ -77,10 +74,9 @@ function SettingsForm({ initial }: { initial: PresentationDates }) {
             <div className={`${card} flex flex-col gap-[0.9rem]`}>
                 <div>
                     <h3 className="m-0">Add tasks to projects</h3>
-                    <p className="m-0 text-text-soft">
+                    <p className="m-0 mt-2 text-text-soft">
                         Re-add the MVP and Final Presentation milestones to every project using the
-                        saved dates above — use this at the start of a new semester. Save your dates
-                        first.
+                        saved dates above.
                     </p>
                 </div>
                 {dirty && (

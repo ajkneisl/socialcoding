@@ -1,4 +1,5 @@
 import { request } from '../../lib/request'
+import type { Role, User } from '../auth/types'
 import type { PendingProject, PresentationDates } from '../projects/types'
 
 export const listPendingProjects = (token: string) =>
@@ -27,3 +28,11 @@ export const syncMilestones = (token: string) =>
         method: 'POST',
         token,
     })
+
+export const listBoardMembers = (token: string) => request<User[]>('/api/board/members', { token })
+
+export const updateMemberRole = (token: string, id: string, role: Role) =>
+    request<User>(`/api/board/members/${id}/role`, { method: 'PUT', body: { role }, token })
+
+export const updateMemberTitle = (token: string, id: string, title: string | null) =>
+    request<User>(`/api/board/members/${id}/title`, { method: 'PUT', body: { title }, token })

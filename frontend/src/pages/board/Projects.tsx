@@ -142,11 +142,12 @@ export default function BoardProjects() {
     return (
         <>
             <SectionHead title="Projects awaiting approval">
-                Review design docs awaiting a decision, plus ones sent back for changes.
+                Review design docs awaiting a decision.
             </SectionHead>
+
             <FormError error={error?.message} />
             {pending.length === 0 ? (
-                <p className="text-text-soft">Nothing awaiting approval. Nice work.</p>
+                <p className="text-text-soft">Nothing awaiting approval..</p>
             ) : (
                 <div className="border-t border-line">
                     {pending.map((p) => (

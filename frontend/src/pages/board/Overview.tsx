@@ -40,10 +40,6 @@ export default function Overview() {
 
     return (
         <>
-            <p className="mb-7 max-w-[60ch] text-text-soft">
-                A quick outline of where things stand. Jump into a section to take action.
-            </p>
-
             <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
                 {stats.map((s) => (
                     <Link

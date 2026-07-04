@@ -102,6 +102,7 @@ export default function BoardEvents() {
     const deleteEvent = useDeleteEvent()
 
     const [form, setForm] = useState(emptyEvent)
+    const [creating, setCreating] = useState(false)
     const [editingId, setEditingId] = useState<number | null>(null)
     const formRef = useRef<HTMLDivElement>(null)
 
@@ -111,12 +112,28 @@ export default function BoardEvents() {
         setForm((f) => ({ ...f, [key]: value }))
     }
 
+    function scrollToForm() {
+        requestAnimationFrame(() =>
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+        )
+    }
+
     function reset() {
         setForm(emptyEvent)
         setEditingId(null)
+        setCreating(false)
+    }
+
+    function startCreate() {
+        setForm(emptyEvent)
+        setEditingId(null)
+        setCreating(true)
+        createEvent.reset()
+        scrollToForm()
     }
 
     function startEdit(event: Event) {
+        setCreating(false)
         setEditingId(event.id)
         setForm({
             title: event.title,
@@ -128,7 +145,8 @@ export default function BoardEvents() {
             imageUrl: event.imageUrl ?? '',
             attendance: event.attendance,
         })
-        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        updateEvent.reset()
+        scrollToForm()
     }
 
     function submit() {
@@ -152,112 +170,105 @@ export default function BoardEvents() {
 
     const valid = form.title.trim() && form.summary.trim() && form.startsAt
     const editing = editingId != null
+    const showForm = creating || editing
     const busy = createEvent.isPending || updateEvent.isPending
     const error = (editing ? updateEvent.error : createEvent.error)?.message
 
     return (
         <>
-            <div ref={formRef}>
-                <SectionHead title={editing ? 'Edit event' : 'Publish an event'}>
-                    Events show up on the public Events page and its calendar.
-                </SectionHead>
+            <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+                <h2 className="m-0">Events</h2>
+                {!showForm && <Button onClick={startCreate}>New event</Button>}
             </div>
 
-            <div className={card}>
-                <div className="flex flex-col gap-4">
-                    <div className="flex gap-4 max-md:flex-col">
-                        <label>
-                            Title
-                            <input
-                                value={form.title}
-                                onChange={(e) => set('title', e.target.value)}
-                                placeholder="Spring Tech Kickoff"
-                                maxLength={200}
-                            />
-                        </label>
-                        <label>
-                            Date &amp; time
-                            <input
-                                type="datetime-local"
-                                value={form.startsAt}
-                                onChange={(e) => set('startsAt', e.target.value)}
-                            />
-                        </label>
-                    </div>
-                    <label>
-                        Summary
-                        <input
-                            value={form.summary}
-                            onChange={(e) => set('summary', e.target.value)}
-                            placeholder="One-line blurb shown in the list"
-                        />
-                    </label>
-                    <label>
-                        Details{' '}
-                        <span className="text-text-soft">
-                            (shown under “Read more” · supports Markdown)
-                        </span>
-                        <textarea
-                            value={form.body}
-                            onChange={(e) => set('body', e.target.value)}
-                            rows={6}
-                            placeholder="The full write-up… **bold**, _italic_, lists, [links](https://…)"
-                        />
-                    </label>
-                    <div className="flex gap-4 max-md:flex-col">
-                        <label>
-                            Location <span className="text-text-soft">(optional)</span>
-                            <input
-                                value={form.location}
-                                onChange={(e) => set('location', e.target.value)}
-                                placeholder="Bruininks Hall 315"
-                            />
-                        </label>
-                        <label>
-                            Burrow link <span className="text-text-soft">(optional)</span>
-                            <input
-                                value={form.burrowUrl}
-                                onChange={(e) => set('burrowUrl', e.target.value)}
-                                placeholder="https://burrow.org/event/…"
-                            />
-                        </label>
-                    </div>
-                    <label>
-                        Event image <span className="text-text-soft">(optional)</span>
-                        <ImageUpload
-                            value={form.imageUrl}
-                            onChange={(url) => set('imageUrl', url)}
-                        />
-                    </label>
-                    <label className="flex-row items-center gap-2">
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 cursor-pointer accent-gold p-0"
-                            checked={form.attendance}
-                            onChange={(e) => set('attendance', e.target.checked)}
-                        />
-                        Track attendance{' '}
-                        <span className="text-text-soft">
-                            (adds a QR check-in, open 1 hour before to 2 hours after the start)
-                        </span>
-                    </label>
-                    <FormError error={error} />
-                    <div className="flex gap-[0.6rem]">
-                        <Button disabled={!valid || busy} onClick={submit}>
-                            {editing ? 'Save changes' : 'Publish event'}
-                        </Button>
-                        {editing && (
-                            <Button variant="ghost" disabled={busy} onClick={reset}>
-                                Cancel
-                            </Button>
-                        )}
+            {showForm && (
+                <div ref={formRef} className="mb-14">
+                    <SectionHead title={editing ? 'Edit event' : 'Publish an event'} />
+                    <div className={card}>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex gap-4 max-md:flex-col">
+                                <label>
+                                    Title
+                                    <input
+                                        value={form.title}
+                                        onChange={(e) => set('title', e.target.value)}
+                                        maxLength={200}
+                                    />
+                                </label>
+                                <label>
+                                    Date &amp; time
+                                    <input
+                                        type="datetime-local"
+                                        value={form.startsAt}
+                                        onChange={(e) => set('startsAt', e.target.value)}
+                                    />
+                                </label>
+                            </div>
+                            <label>
+                                Summary
+                                <input
+                                    value={form.summary}
+                                    onChange={(e) => set('summary', e.target.value)}
+                                />
+                            </label>
+                            <label>
+                                Details{' '}
+                                <textarea
+                                    value={form.body}
+                                    onChange={(e) => set('body', e.target.value)}
+                                    rows={6}
+                                />
+                            </label>
+                            <div className="flex gap-4 max-md:flex-col">
+                                <label>
+                                    Location <span className="text-text-soft">(optional)</span>
+                                    <input
+                                        value={form.location}
+                                        onChange={(e) => set('location', e.target.value)}
+                                        placeholder="Bruininks Hall 315"
+                                    />
+                                </label>
+                                <label>
+                                    Burrow link <span className="text-text-soft">(optional)</span>
+                                    <input
+                                        value={form.burrowUrl}
+                                        onChange={(e) => set('burrowUrl', e.target.value)}
+                                        placeholder="https://burrow.org/event/…"
+                                    />
+                                </label>
+                            </div>
+                            <label>
+                                Event image <span className="text-text-soft">(optional)</span>
+                                <ImageUpload
+                                    value={form.imageUrl}
+                                    onChange={(url) => set('imageUrl', url)}
+                                />
+                            </label>
+                            <label className="flex-row items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 cursor-pointer accent-gold p-0"
+                                    checked={form.attendance}
+                                    onChange={(e) => set('attendance', e.target.checked)}
+                                />
+                                Track attendance
+                            </label>
+                            <FormError error={error} />
+                            <div className="flex gap-[0.6rem]">
+                                <Button disabled={!valid || busy} onClick={submit}>
+                                    {editing ? 'Save changes' : 'Publish event'}
+                                </Button>
+                                <Button variant="ghost" disabled={busy} onClick={reset}>
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {events.length > 0 && (
+            {events.length > 0 ? (
                 <>
-                    <SectionHead title="Published events" className="mt-14" />
                     <div className="border-t border-line">
                         {pageItems.map((event) => (
                             <PublishedRow
@@ -272,6 +283,12 @@ export default function BoardEvents() {
                     </div>
                     <Pagination page={page} pageCount={pageCount} onChange={setPage} />
                 </>
+            ) : (
+                !showForm && (
+                    <p className="border-t border-line py-[1.4rem] text-text-soft">
+                        No events yet. Create one to get things rolling.
+                    </p>
+                )
             )}
         </>
     )
