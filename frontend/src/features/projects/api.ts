@@ -39,7 +39,13 @@ export const toggleProjectLike = (token: string, id: string) =>
 export const updateProjectDesign = (
     token: string,
     id: string,
-    body: { title: string; description: string; repoUrl?: string; designDoc: DesignDoc },
+    body: {
+        title: string
+        description: string
+        repoUrl?: string
+        imageUrl?: string
+        designDoc: DesignDoc
+    },
 ) => request<ProjectDetail>(`/api/projects/${id}/design`, { method: 'PUT', body, token })
 
 export const updateProjectMembers = (

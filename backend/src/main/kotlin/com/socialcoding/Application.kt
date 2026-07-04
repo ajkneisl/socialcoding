@@ -15,6 +15,7 @@ import com.socialcoding.projects.ProjectLikes
 import com.socialcoding.projects.ProjectTasks
 import com.socialcoding.projects.Projects
 import com.socialcoding.projects.projectRoutes
+import com.socialcoding.storage.uploadRoutes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -121,6 +122,7 @@ fun Application.rootModule() {
             projectRoutes()
             boardRoutes()
             eventRoutes()
+            uploadRoutes()
         }
     }
 }

@@ -53,6 +53,7 @@ fun Route.projectRoutes() {
          * @param title The project title.
          * @param description The project description.
          * @param repoUrl The optional GitHub repository URL.
+         * @param imageUrl The optional cover image.
          * @param teamLeadId The ID of the team lead; defaults to the creator.
          * @param memberIds The IDs of the team members.
          * @param designDoc The design doc answers.
@@ -63,6 +64,7 @@ fun Route.projectRoutes() {
             val title: String,
             val description: String,
             val repoUrl: String? = null,
+            val imageUrl: String? = null,
             val teamLeadId: String? = null,
             val memberIds: List<String> = emptyList(),
             val designDoc: DesignDocContent = DesignDocContent(),
@@ -96,6 +98,7 @@ fun Route.projectRoutes() {
                         it[title] = body.title.trim()
                         it[description] = body.description.trim()
                         it[repoUrl] = body.repoUrl?.trim()?.ifBlank { null }
+                        it[imageUrl] = body.imageUrl?.trim()?.ifBlank { null }
                         it[ownerId] = userID
                         it[teamLeadId] = leadID
                         it[designDoc] = encodeDesignDoc(body.designDoc)
@@ -225,6 +228,7 @@ fun Route.projectRoutes() {
          * @param title The project title.
          * @param description The project description.
          * @param repoUrl The optional GitHub repository URL.
+         * @param imageUrl The optional cover image.
          * @param designDoc The design doc answers.
          */
         @Serializable
@@ -232,6 +236,7 @@ fun Route.projectRoutes() {
             val title: String,
             val description: String,
             val repoUrl: String? = null,
+            val imageUrl: String? = null,
             val designDoc: DesignDocContent,
         )
 
@@ -257,6 +262,7 @@ fun Route.projectRoutes() {
                     it[title] = body.title.trim()
                     it[description] = body.description.trim()
                     it[repoUrl] = body.repoUrl?.trim()?.ifBlank { null }
+                    it[imageUrl] = body.imageUrl?.trim()?.ifBlank { null }
                     it[designDoc] = encodeDesignDoc(body.designDoc)
                 }
             }

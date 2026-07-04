@@ -17,6 +17,7 @@ import {useAuth} from '../auth-context'
 import GoogleSignIn from '../features/auth/GoogleSignIn'
 import {Button} from '../components/Button'
 import {FormActions} from '../components/FormActions'
+import {ImageUpload} from '../components/ImageUpload'
 import {FormError} from '../components/FormError'
 import {NoticeCard} from '../components/NoticeCard'
 import {PageMessage} from '../components/PageMessage'
@@ -51,6 +52,7 @@ export default function CreateProject() {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [repoUrl, setRepoUrl] = useState('')
+    const [imageUrl, setImageUrl] = useState('')
     const [memberIds, setMemberIds] = useState<string[]>([])
     const [leadId, setLeadId] = useState<string>('')
     const [doc, setDoc] = useState<DesignDoc>(emptyDesignDoc())
@@ -114,6 +116,7 @@ export default function CreateProject() {
                 title: title.trim(),
                 description: description.trim(),
                 repoUrl: repoUrl.trim() || undefined,
+                imageUrl: imageUrl || undefined,
                 teamLeadId: leadId,
                 memberIds,
                 designDoc: doc,
@@ -186,6 +189,10 @@ export default function CreateProject() {
                                 onChange={(e) => setRepoUrl(e.target.value)}
                                 placeholder="https://github.com/…"
                             />
+                        </label>
+                        <label>
+                            Cover image <span className="text-text-soft">(optional)</span>
+                            <ImageUpload value={imageUrl} onChange={setImageUrl} />
                         </label>
                         <div>
                             <h4 className="mb-[0.15rem] mt-3">Team</h4>

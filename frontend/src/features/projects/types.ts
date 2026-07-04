@@ -9,6 +9,7 @@ export interface Project {
     longDescription: string | null
     repoUrl: string | null
     siteUrl: string | null
+    imageUrl: string | null
     status: ProjectStatus
     active: boolean
     teamLeadName: string
@@ -85,6 +86,7 @@ export interface CreateProjectRequest {
     title: string
     description: string
     repoUrl?: string
+    imageUrl?: string
     teamLeadId?: string
     memberIds: string[]
     designDoc: DesignDoc

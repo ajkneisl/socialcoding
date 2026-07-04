@@ -10,6 +10,7 @@ import {
 import type { Event } from '../../features/events/types'
 import { Button } from '../../components/Button'
 import { FormError } from '../../components/FormError'
+import { ImageUpload } from '../../components/ImageUpload'
 import { Pagination } from '../../components/Pagination'
 import { usePaged } from '../../components/usePaged'
 import { SectionHead } from '../../components/SectionHead'
@@ -222,11 +223,10 @@ export default function BoardEvents() {
                         </label>
                     </div>
                     <label>
-                        Image URL <span className="text-text-soft">(optional)</span>
-                        <input
+                        Event image <span className="text-text-soft">(optional)</span>
+                        <ImageUpload
                             value={form.imageUrl}
-                            onChange={(e) => set('imageUrl', e.target.value)}
-                            placeholder="https://…/poster.png"
+                            onChange={(url) => set('imageUrl', url)}
                         />
                     </label>
                     <label className="flex-row items-center gap-2">
