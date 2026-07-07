@@ -3,7 +3,6 @@ import { useAuth, meKey } from '../../auth-context'
 import { authApi } from './api'
 
 type ProfileUpdate = {
-    joinedTerm?: string | null
     gradYear?: number | null
     github?: string | null
     linkedin?: string | null

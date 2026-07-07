@@ -39,7 +39,7 @@ function CogIcon({className}: {className?: string}) {
     )
 }
 
-type ProfileFieldKey = 'joinedTerm' | 'gradYear' | 'github' | 'linkedin' | 'website' | 'company'
+type ProfileFieldKey = 'gradYear' | 'github' | 'linkedin' | 'website' | 'company'
 type OptionalFieldKey = 'github' | 'linkedin' | 'website' | 'company'
 
 /** The opt-in profile details, shown as pills until the user adds them. */
@@ -59,7 +59,6 @@ const OPTIONAL_FIELDS: {
 function ProfileForm() {
     const {user, token, refreshUser} = useAuth()
     const initial: Record<ProfileFieldKey, string> = {
-        joinedTerm: user?.joinedTerm ?? '',
         gradYear: user?.gradYear ? String(user.gradYear) : '',
         github: user?.github ?? '',
         linkedin: user?.linkedin ?? '',
@@ -97,7 +96,6 @@ function ProfileForm() {
         setSaving(true)
         try {
             await authApi.updateProfile(token, {
-                joinedTerm: values.joinedTerm.trim() || null,
                 gradYear: values.gradYear ? Number(values.gradYear) : null,
                 github: values.github.trim() || null,
                 linkedin: values.linkedin.trim() || null,
@@ -124,14 +122,6 @@ function ProfileForm() {
             </div>
 
             <div className="flex flex-wrap gap-[0.9rem] [&>label]:min-w-[11rem]">
-                <label>
-                    Joined
-                    <input
-                        value={values.joinedTerm}
-                        onChange={(e) => setValue('joinedTerm', e.target.value)}
-                        maxLength={32}
-                    />
-                </label>
                 <label>
                     Class of
                     <input

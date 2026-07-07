@@ -10,10 +10,7 @@ function displayUrl(url: string) {
 }
 
 export function PersonCard({ person }: { person: Person }) {
-    const meta = [
-        person.joinedTerm && `joined ${person.joinedTerm}`,
-        person.gradYear && `class of ${person.gradYear}`,
-    ]
+    const meta = [person.gradYear && `class of ${person.gradYear}`]
         .filter(Boolean)
         .join(' · ')
 

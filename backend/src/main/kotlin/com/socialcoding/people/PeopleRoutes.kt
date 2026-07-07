@@ -16,7 +16,6 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 data class Person(
     val id: String,
     val name: String,
-    val joinedTerm: String?,
     val gradYear: Int?,
     val github: String?,
     val linkedin: String?,
@@ -31,7 +30,6 @@ fun ResultRow.toPerson() =
     Person(
         id = this[Users.id].toString(),
         name = this[Users.name],
-        joinedTerm = this[Users.joinedTerm],
         gradYear = this[Users.gradYear],
         github = this[Users.github],
         linkedin = this[Users.linkedin],

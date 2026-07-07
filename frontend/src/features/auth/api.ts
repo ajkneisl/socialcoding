@@ -8,7 +8,6 @@ export const authApi = {
     updateProfile: (
         token: string,
         profile: {
-            joinedTerm?: string | null
             gradYear?: number | null
             github?: string | null
             linkedin?: string | null

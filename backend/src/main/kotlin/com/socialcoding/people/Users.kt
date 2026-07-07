@@ -13,7 +13,6 @@ object Users : Table("users") {
     val name = varchar("name", 255)
     val avatarUrl = varchar("avatar_url", 512).nullable()
     val role = enumerationByName("role", 16, Role::class).default(Role.MEMBER)
-    val joinedTerm = varchar("joined_term", 32).nullable()
     val gradYear = integer("grad_year").nullable()
     val github = varchar("github", 255).nullable()
     val linkedin = varchar("linkedin", 255).nullable()
@@ -39,7 +38,6 @@ data class User(
     val email: String,
     val name: String,
     val role: Role,
-    val joinedTerm: String?,
     val gradYear: Int?,
     val github: String?,
     val linkedin: String?,
@@ -56,7 +54,6 @@ fun ResultRow.toUser() =
         email = this[Users.email],
         name = this[Users.name],
         role = this[Users.role],
-        joinedTerm = this[Users.joinedTerm],
         gradYear = this[Users.gradYear],
         github = this[Users.github],
         linkedin = this[Users.linkedin],

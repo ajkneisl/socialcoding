@@ -46,7 +46,6 @@ export default function People() {
         return people.filter(
             (p) =>
                 p.name.toLowerCase().includes(q) ||
-                (p.joinedTerm ?? '').toLowerCase().includes(q) ||
                 String(p.gradYear ?? '').includes(q),
         )
     }, [people, query])

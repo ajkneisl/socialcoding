@@ -91,7 +91,6 @@ fun Route.authRoutes() {
         /**
          * Request to update a profile.
          *
-         * @param joinedTerm The term the user joined.
          * @param gradYear The user's graduation year.
          * @param github The user's GitHub URL.
          * @param linkedin The user's LinkedIn URL.
@@ -101,7 +100,6 @@ fun Route.authRoutes() {
          */
         @Serializable
         data class UpdateProfileRequest(
-            val joinedTerm: String? = null,
             val gradYear: Int? = null,
             val github: String? = null,
             val linkedin: String? = null,
@@ -118,7 +116,6 @@ fun Route.authRoutes() {
 
             val user = transaction {
                 Users.update({ Users.id eq userId }) {
-                    it[joinedTerm] = body.joinedTerm
                     it[gradYear] = body.gradYear
                     it[github] = body.github
                     it[linkedin] = body.linkedin

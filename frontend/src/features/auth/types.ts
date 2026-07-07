@@ -5,7 +5,6 @@ export interface User {
     email: string
     name: string
     role: Role
-    joinedTerm: string | null
     gradYear: number | null
     github: string | null
     linkedin: string | null
