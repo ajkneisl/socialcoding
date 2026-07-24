@@ -1,15 +1,38 @@
 package com.socialcoding.auth
 
 import com.socialcoding.common.InvalidAuthorization
+import com.socialcoding.common.MalformedBody
+import com.socialcoding.common.invalidArguments
+import com.socialcoding.common.missingArguments
 import com.socialcoding.db.Role
 import com.socialcoding.db.Users
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
 import io.ktor.server.routing.RoutingContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+
+fun <T> RoutingContext.argument(name: String, transform: String.() -> T): T {
+    val rawValue = argument(name)
+
+    return runCatching { transform(rawValue) }.getOrNull()
+        ?: throw invalidArguments(name to rawValue)
+}
+
+fun RoutingContext.argument(name: String): String {
+    return call.parameters[name] ?: throw missingArguments(name)
+}
+
+suspend inline fun <reified T : Any> RoutingContext.body(): T {
+    val result = runCatching { call.receive<T>() }
+    result.exceptionOrNull()?.let { if (it is CancellationException) throw it }
+
+    return result.getOrNull() ?: throw MalformedBody()
+}
 
 /** The signed-in user's ID from the session JWT. */
 fun RoutingContext.currentUserID(): Uuid = Uuid.parse(call.principal<JWTPrincipal>()!!.subject!!)
@@ -28,4 +51,9 @@ fun RoutingContext.currentRole(): Role {
     }
 
     return userRow[Users.role]
+}
+
+/** Require the signed-in user's role to be [role]. */
+fun RoutingContext.requireRole(role: Role = Role.BOARD) {
+    if (currentRole() != role) throw InvalidAuthorization()
 }

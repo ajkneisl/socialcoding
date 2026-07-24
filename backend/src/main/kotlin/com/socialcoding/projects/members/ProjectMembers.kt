@@ -1,7 +1,8 @@
-package com.socialcoding.db
+package com.socialcoding.projects
 
-import com.socialcoding.projects.Projects
-import kotlinx.serialization.Serializable
+import com.socialcoding.db.MappedTable
+import com.socialcoding.db.Users
+import com.socialcoding.projects.members.models.MemberStatus
 import org.jetbrains.exposed.v1.core.Table
 
 object ProjectMembers : Table("project_members") {
@@ -15,11 +16,12 @@ object ProjectMembers : Table("project_members") {
     override val primaryKey = PrimaryKey(projectID, userID)
 }
 
-/** Whether a member has accepted their project invite or is still pending a decision. */
-enum class MemberStatus {
-    PENDING,
-    ACCEPTED,
-}
-
-@Serializable
-data class ProjectMember(val id: String, val name: String, val avatarUrl: String? = null)
+/**
+ * A row of [ProjectMembers].
+ */
+@MappedTable(ProjectMembers::class)
+data class ProjectMembership(
+    val projectID: String,
+    val userID: String,
+    val status: MemberStatus,
+)

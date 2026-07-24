@@ -3,19 +3,26 @@ exposed = "1.3.0"
 h2 = "2.4.240"
 h2-r2dbc = "1.1.0.RELEASE"
 kotlin = "2.3.21"
+coroutines = "1.11.0"
+kord = "0.15.0"
 logback = "1.5.34"
 postgresql = "42.7.11"
 dotenv = "6.5.1"
+reflections = "0.10.2"
 
 [libraries]
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 exposed-r2dbc = { module = "org.jetbrains.exposed:exposed-r2dbc", version.ref = "exposed" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 h2database-h2 = { module = "com.h2database:h2", version.ref = "h2" }
 h2database-r2dbc = { module = "io.r2dbc:r2dbc-h2", version.ref = "h2-r2dbc" }
+kord-rest = { module = "dev.kord:kord-rest", version.ref = "kord" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
+reflections = { module = "org.reflections:reflections", version.ref = "reflections" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

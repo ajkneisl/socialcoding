@@ -33,6 +33,7 @@ enum class Role {
 
 /** A signed-in user's record. */
 @Serializable
+@MappedTable(Users::class)
 data class User(
     val id: String,
     val email: String,
@@ -48,18 +49,4 @@ data class User(
     val listed: Boolean = true,
 )
 
-fun ResultRow.toUser() =
-    User(
-        id = this[Users.id].toString(),
-        email = this[Users.email],
-        name = this[Users.name],
-        role = this[Users.role],
-        gradYear = this[Users.gradYear],
-        github = this[Users.github],
-        linkedin = this[Users.linkedin],
-        website = this[Users.website],
-        company = this[Users.company],
-        title = this[Users.title],
-        avatarUrl = this[Users.avatarUrl],
-        listed = this[Users.listed],
-    )
+fun ResultRow.toUser(): User = toEntity()

@@ -1,10 +1,16 @@
 package com.socialcoding.projects
 
 import com.socialcoding.board.PresentationDates
-import com.socialcoding.db.MemberStatus
-import com.socialcoding.db.ProjectMember
-import com.socialcoding.db.ProjectMembers
+import com.socialcoding.db.Role
 import com.socialcoding.db.Users
+import com.socialcoding.projects.members.models.MemberStatus
+import com.socialcoding.projects.members.models.ProjectMember
+import com.socialcoding.projects.models.DesignDocContent
+import com.socialcoding.projects.models.PendingProject
+import com.socialcoding.projects.models.Project
+import com.socialcoding.projects.models.ProjectDetail
+import com.socialcoding.projects.models.ProjectShowcase
+import com.socialcoding.projects.models.ProjectStatus
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.JoinType
@@ -128,9 +134,10 @@ fun replaceTasks(projectId: Uuid, tasks: List<TaskInput>, teamIds: Set<Uuid>) {
             it[ProjectTasks.projectID] = projectId
             it[name] = task.name.trim().take(300)
             it[assigneeIDs] =
-                task.assigneeIds.mapNotNull { id -> id.toUuidOrNull() }
+                task.assigneeIds
+                    .mapNotNull { id -> id.toUuidOrNull() }
                     .filter { id -> id in teamIds }
-                    .joinToString(",")
+                    .toIdJson()
             it[dueDate] = task.dueDate.trim().take(10)
             it[milestone] = task.milestone
         } get ProjectTasks.id
@@ -139,7 +146,7 @@ fun replaceTasks(projectId: Uuid, tasks: List<TaskInput>, teamIds: Set<Uuid>) {
         val deps = task.dependsOn.filter { it != i }.mapNotNull { newIds.getOrNull(it) }.distinct()
         if (deps.isNotEmpty()) {
             ProjectTasks.update({ ProjectTasks.id eq newIds[i] }) {
-                it[dependsOnIDs] = deps.joinToString(",")
+                it[dependsOnIDs] = Json.encodeToString(deps)
             }
         }
     }
@@ -241,6 +248,45 @@ fun membersByIds(ids: Collection<Uuid>): List<ProjectMember> =
         .where { Users.id inList ids.distinct() }
         .orderBy(Users.name)
         .map { ProjectMember(it[Users.id].toString(), it[Users.name], it[Users.avatarUrl]) }
+
+/**
+ * Loads the full [ProjectDetail] for [projectID] as seen by [userID] with [role], or null if the
+ * project doesn't exist or the viewer isn't allowed to see it (not on the team, not board, and the
+ * project isn't approved).
+ */
+fun projectDetail(projectID: Uuid, userID: Uuid, role: Role): ProjectDetail? = transaction {
+    val row =
+        projectsWithOwners().where { Projects.id eq projectID }.firstOrNull()
+            ?: return@transaction null
+    val memberIds = memberIdsOf(projectID)
+    val leadId = row[Projects.teamLeadId] ?: row[Projects.ownerId]
+    val onTeam = userID in memberIds || userID == leadId || userID == row[Projects.ownerId]
+    val isBoard = role == Role.BOARD
+
+    if (!onTeam && !isBoard && row[Projects.status] != ProjectStatus.APPROVED) {
+        return@transaction null
+    }
+
+    val members = membersByIds(memberIds + leadId)
+    val pendingMembers = membersByIds(pendingMemberIdsOf(projectID))
+
+    val tasks =
+        ProjectTasks.selectAll()
+            .where { ProjectTasks.projectID eq projectID }
+            .orderBy(ProjectTasks.dueDate)
+            .map { it.toTask() }
+
+    ProjectDetail(
+        project = row.toProject(),
+        designDoc = decodeDesignDoc(row[Projects.designDoc]),
+        teamLeadID = leadId.toString(),
+        members = members,
+        pendingMembers = pendingMembers,
+        tasks = tasks,
+        canEdit = onTeam || isBoard,
+        canManageTeam = userID == leadId || isBoard,
+    )
+}
 
 /**
  * Every project that isn't approved yet — those awaiting board review and those the board rejected

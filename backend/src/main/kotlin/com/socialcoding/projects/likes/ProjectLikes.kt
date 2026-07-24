@@ -1,8 +1,9 @@
 package com.socialcoding.projects
 
 import com.socialcoding.db.Users
+import com.socialcoding.projects.likes.models.LikeResult
+import com.socialcoding.projects.models.ProjectStatus
 import kotlin.uuid.Uuid
-import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -19,10 +20,6 @@ object ProjectLikes : Table("project_likes") {
     // A user may only like a project once, so the pair is the primary key.
     override val primaryKey = PrimaryKey(projectID, userID)
 }
-
-/** The like count and the requesting user's like state for a project. */
-@Serializable
-data class LikeResult(val liked: Boolean, val likes: Long)
 
 /** Whether an approved (publicly listed) project exists. Only those may be liked. */
 fun approvedProjectExists(projectID: Uuid): Boolean = transaction {

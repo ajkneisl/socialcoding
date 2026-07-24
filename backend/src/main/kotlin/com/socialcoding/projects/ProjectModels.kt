@@ -2,6 +2,7 @@ package com.socialcoding.projects
 
 import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 /** Task as submitted by the client; dependencies reference indices into the submitted list. */
 @Serializable
@@ -16,9 +17,14 @@ data class TaskInput(
 /** Parses a user id string into a [Uuid], or null if it isn't a valid UUID. */
 fun String.toUuidOrNull(): Uuid? = runCatching { Uuid.parse(trim()) }.getOrNull()
 
-/** Decodes the comma-separated task-row-id column on ProjectTasks. */
-fun String.toIDList(): List<Long> = split(',').mapNotNull { it.trim().toLongOrNull() }
+fun String.toUuid(): Uuid = Uuid.parse(trim())
 
-/** Decodes the comma-separated user-id (UUID) column on ProjectTasks. */
-fun String.toUserIdList(): List<Uuid> = split(',').mapNotNull { it.toUuidOrNull() }
+/** Encodes user ids as the JSON array of uuid strings stored in the `assignee_ids` column. */
+fun List<Uuid>.toIdJson(): String = Json.encodeToString(map { it.toString() })
+
+/** Decodes the JSON `assignee_ids` column back into user ids. */
+fun String.toUserIdList(): List<Uuid> =
+    runCatching { Json.decodeFromString<List<String>>(this) }
+        .getOrDefault(emptyList())
+        .mapNotNull { it.toUuidOrNull() }
 
