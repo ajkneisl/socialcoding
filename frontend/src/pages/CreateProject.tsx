@@ -63,6 +63,7 @@ export default function CreateProject() {
     // You're always on your own team, and lead by default.
     useEffect(() => {
         if (user && memberIds.length === 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setMemberIds([user.id])
             setLeadId(user.id)
         }
@@ -102,6 +103,7 @@ export default function CreateProject() {
         }
         setError(null)
         setStep((s) => Math.min(s + 1, STEPS.length - 1))
+        window.scrollTo({top: 0, behavior: 'smooth'})
     }
 
     async function submit() {
