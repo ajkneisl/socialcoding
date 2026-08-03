@@ -58,6 +58,7 @@ fun Route.projectRoutes() {
          * @param memberIds The IDs of the team members.
          * @param designDoc The design doc answers.
          * @param tasks The initial deliverables.
+         * @param lookingForTeammates Whether the team is looking for more people to join.
          */
         @Serializable
         data class CreateProjectRequest(
@@ -69,6 +70,7 @@ fun Route.projectRoutes() {
             val memberIds: List<String> = emptyList(),
             val designDoc: DesignDocContent = DesignDocContent(),
             val tasks: List<TaskInput> = emptyList(),
+            val lookingForTeammates: Boolean = false,
         )
 
         // POST /api/projects
@@ -102,6 +104,7 @@ fun Route.projectRoutes() {
                         it[ownerId] = userID
                         it[teamLeadId] = leadID
                         it[designDoc] = encodeDesignDoc(body.designDoc)
+                        it[lookingForTeammates] = body.lookingForTeammates
                         it[status] = ProjectStatus.PENDING
                         it[submittedAt] = System.currentTimeMillis()
                     } get Projects.id
@@ -230,6 +233,7 @@ fun Route.projectRoutes() {
          * @param repoUrl The optional GitHub repository URL.
          * @param imageUrl The optional cover image.
          * @param designDoc The design doc answers.
+         * @param lookingForTeammates Whether the team is looking for more people to join.
          */
         @Serializable
         data class UpdateDesignRequest(
@@ -238,6 +242,7 @@ fun Route.projectRoutes() {
             val repoUrl: String? = null,
             val imageUrl: String? = null,
             val designDoc: DesignDocContent,
+            val lookingForTeammates: Boolean = false,
         )
 
         // PUT /api/projects/{id}/design
@@ -264,6 +269,7 @@ fun Route.projectRoutes() {
                     it[repoUrl] = body.repoUrl?.trim()?.ifBlank { null }
                     it[imageUrl] = body.imageUrl?.trim()?.ifBlank { null }
                     it[designDoc] = encodeDesignDoc(body.designDoc)
+                    it[lookingForTeammates] = body.lookingForTeammates
                 }
             }
 

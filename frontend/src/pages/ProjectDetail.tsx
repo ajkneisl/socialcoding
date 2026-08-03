@@ -12,7 +12,7 @@ import {
     useUpdateProjectTasks,
 } from '../features/projects/queries'
 import type { ProjectDetail as Detail } from '../features/projects/types'
-import { ReviewNote, StatusBadge } from '../features/projects/StatusBadge'
+import { ReviewNote, StatusBadge, TeammatesBadge } from '../features/projects/StatusBadge'
 import {
     DESIGN_SECTIONS,
     DeliverablesEditor,
@@ -33,6 +33,7 @@ import { FormError } from '../components/FormError'
 import { ImageUpload } from '../components/ImageUpload'
 import { NoticeCard } from '../components/NoticeCard'
 import { PageMessage } from '../components/PageMessage'
+import { Switch } from '../components/Switch'
 import { card, page } from '../components/styles'
 
 const sectionHead = 'mb-3 flex items-center justify-between gap-4'
@@ -227,6 +228,7 @@ function DesignDocSections({ detail }: { detail: Detail }) {
     const [repoUrl, setRepoUrl] = useState('')
     const [imageUrl, setImageUrl] = useState('')
     const [doc, setDoc] = useState<DesignDoc>(detail.designDoc)
+    const [lookingForTeammates, setLookingForTeammates] = useState(false)
 
     function startEditing() {
         setTitle(detail.project.title)
@@ -234,6 +236,7 @@ function DesignDocSections({ detail }: { detail: Detail }) {
         setRepoUrl(detail.project.repoUrl ?? '')
         setImageUrl(detail.project.imageUrl ?? '')
         setDoc(detail.designDoc)
+        setLookingForTeammates(detail.project.lookingForTeammates)
         updateDesign.reset()
         setEditing(true)
     }
@@ -246,6 +249,7 @@ function DesignDocSections({ detail }: { detail: Detail }) {
                 repoUrl: repoUrl.trim() || undefined,
                 imageUrl: imageUrl || undefined,
                 designDoc: doc,
+                lookingForTeammates,
             })
             setEditing(false)
         } catch {
@@ -300,6 +304,12 @@ function DesignDocSections({ detail }: { detail: Detail }) {
                         Cover image <span className="text-text-soft">(optional)</span>
                         <ImageUpload value={imageUrl} onChange={setImageUrl} />
                     </label>
+                    <Switch
+                        checked={lookingForTeammates}
+                        onChange={setLookingForTeammates}
+                        label="Looking for teammates"
+                        description="Show a tag on the project so others know the team wants more people."
+                    />
                     {DESIGN_SECTIONS.map((section) => (
                         <div key={section.id}>
                             <h4 className="mb-[0.15rem] mt-3">{section.title}</h4>
@@ -448,6 +458,7 @@ export default function ProjectDetail() {
                         <div className="flex flex-wrap items-center gap-3">
                             <h2 className="m-0">{detail.project.title}</h2>
                             <StatusBadge status={detail.project.status} />
+                            {detail.project.lookingForTeammates && <TeammatesBadge />}
                         </div>
                         <p className="my-2 max-w-[68ch] text-text-soft">
                             {detail.project.description}

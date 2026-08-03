@@ -12,6 +12,7 @@ export interface Project {
     imageUrl: string | null
     status: ProjectStatus
     active: boolean
+    lookingForTeammates: boolean
     teamLeadName: string
     teamLeadAvatarUrl: string | null
     submittedAt: number
@@ -91,4 +92,5 @@ export interface CreateProjectRequest {
     memberIds: string[]
     designDoc: DesignDoc
     tasks: TaskInput[]
+    lookingForTeammates?: boolean
 }
