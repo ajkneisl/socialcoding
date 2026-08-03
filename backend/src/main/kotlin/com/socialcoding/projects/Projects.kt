@@ -22,6 +22,7 @@ object Projects : Table("projects") {
     val ownerId = uuid("owner_id").references(Users.id)
     val teamLeadId = uuid("team_lead_id").references(Users.id).nullable()
     val designDoc = text("design_doc").nullable()
+    val lookingForTeammates = bool("looking_for_teammates").default(false)
     val status =
         enumerationByName("status", 16, ProjectStatus::class).default(ProjectStatus.PENDING)
     val submittedAt = long("submitted_at")
@@ -48,6 +49,7 @@ enum class ProjectStatus {
  * @param imageUrl The optional cover image.
  * @param status The board status of the project.
  * @param active If the project is active.
+ * @param lookingForTeammates Whether the team is looking for more people to join.
  * @param teamLeadName The name of the project's team lead (the owner if none is set).
  * @param teamLeadAvatarUrl The team lead's profile picture, if they have one.
  * @param submittedAt When the project was submitted in epoch ms.
@@ -65,6 +67,7 @@ data class Project(
     val imageUrl: String? = null,
     val status: ProjectStatus,
     val active: Boolean,
+    val lookingForTeammates: Boolean = false,
     val teamLeadName: String,
     val teamLeadAvatarUrl: String? = null,
     val submittedAt: Long,
@@ -85,6 +88,7 @@ fun ResultRow.toProject(): Project {
         title = this[Projects.title],
         description = this[Projects.description],
         active = this[Projects.active],
+        lookingForTeammates = this[Projects.lookingForTeammates],
         teamLeadName = if (leadJoined) this[ProjectLead[Users.name]] else this[Users.name],
         teamLeadAvatarUrl =
             if (leadJoined) this[ProjectLead[Users.avatarUrl]] else this[Users.avatarUrl],

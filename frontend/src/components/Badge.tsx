@@ -9,6 +9,7 @@ const variants = {
     rejected: 'bg-red-400/12 text-red-400',
     inactive: 'border border-line bg-panel text-text-faint',
     board: 'bg-crimson text-gold',
+    teammates: 'bg-sky-400/12 text-sky-400',
 }
 
 export type BadgeVariant = keyof typeof variants

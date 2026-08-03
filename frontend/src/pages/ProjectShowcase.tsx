@@ -6,7 +6,7 @@ import { FormError } from '../components/FormError'
 import { Spinner } from '../components/Spinner'
 import { card, page } from '../components/styles'
 import { LikeButton } from '../features/projects/LikeButton'
-import { ActiveBadge } from '../features/projects/StatusBadge'
+import { ActiveBadge, TeammatesBadge } from '../features/projects/StatusBadge'
 import { useProjectShowcase } from '../features/projects/queries'
 
 const externalLink =
@@ -75,6 +75,7 @@ export default function ProjectShowcase() {
                     <div className="flex flex-wrap items-center gap-3">
                         <h2 className="m-0">{project.title}</h2>
                         <ActiveBadge active={project.active} />
+                        {project.lookingForTeammates && <TeammatesBadge />}
                         {onTeam && (
                             <Link
                                 to={`/projects/${project.id}/doc`}

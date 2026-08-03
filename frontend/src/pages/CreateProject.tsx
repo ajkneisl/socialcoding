@@ -22,6 +22,7 @@ import {FormError} from '../components/FormError'
 import {NoticeCard} from '../components/NoticeCard'
 import {PageMessage} from '../components/PageMessage'
 import {SectionHead} from '../components/SectionHead'
+import {Switch} from '../components/Switch'
 import {card, page} from '../components/styles'
 
 const STEPS = ['Details', 'About your Project', 'Architecture', 'Teamwork', 'Deliverables']
@@ -55,6 +56,7 @@ export default function CreateProject() {
     const [imageUrl, setImageUrl] = useState('')
     const [memberIds, setMemberIds] = useState<string[]>([])
     const [leadId, setLeadId] = useState<string>('')
+    const [lookingForTeammates, setLookingForTeammates] = useState(false)
     const [doc, setDoc] = useState<DesignDoc>(emptyDesignDoc())
     const [tasks, setTasks] = useState<EditableTask[]>(requiredMilestones())
 
@@ -119,6 +121,7 @@ export default function CreateProject() {
                 imageUrl: imageUrl || undefined,
                 teamLeadId: leadId,
                 memberIds,
+                lookingForTeammates,
                 designDoc: doc,
                 tasks: tasks
                     .filter((t) => t.name.trim() !== '')
@@ -209,6 +212,13 @@ export default function CreateProject() {
                                 setMemberIds(ids)
                                 setLeadId(lead)
                             }}
+                        />
+
+                        <Switch
+                            checked={lookingForTeammates}
+                            onChange={setLookingForTeammates}
+                            label="Looking for teammates"
+                            description="Show a tag on the project so others know the team wants more people."
                         />
                     </>
                 )}

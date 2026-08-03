@@ -18,6 +18,10 @@ export function ActiveBadge({ active }: { active: boolean }) {
     )
 }
 
+export function TeammatesBadge() {
+    return <Badge variant="teammates">Looking for teammates</Badge>
+}
+
 export function ReviewNote({ note, className }: { note: string; className?: string }) {
     return (
         <p
