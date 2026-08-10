@@ -1,14 +1,19 @@
 package com.socialcoding.board.routes
 
-import com.socialcoding.auth.requireRole
+import com.socialcoding.board.BoardConfig
 import com.socialcoding.board.BoardSettings
-import io.ktor.server.request.receive
+import com.socialcoding.user.body
+import com.socialcoding.user.requireRole
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 
-/** PUT /api/board/settings — set the presentation dates inherited by project milestones. */
+/**
+ * Set the milestone dates and the Discord announcement channel.
+ *
+ * PUT /api/board/settings
+ */
 val SET_SETTINGS: suspend RoutingContext.() -> Unit = {
     requireRole()
-    BoardSettings.setPresentationDates(call.receive())
-    call.respond(BoardSettings.presentationDates())
+    BoardSettings.setConfig(body<BoardConfig>())
+    call.respond(BoardSettings.config())
 }

@@ -1,10 +1,10 @@
 package com.socialcoding.projects.routes
 
-import com.socialcoding.auth.currentUserID
+import com.socialcoding.user.currentUserID
 import com.socialcoding.common.NotFound
-import com.socialcoding.db.query
-import com.socialcoding.db.toEntity
-import com.socialcoding.db.update
+import com.socialcoding.api.db.query
+import com.socialcoding.api.db.toEntity
+import com.socialcoding.api.db.update
 import com.socialcoding.projects.ProjectMembers
 import com.socialcoding.projects.ProjectMembership
 import com.socialcoding.projects.members.models.MemberStatus

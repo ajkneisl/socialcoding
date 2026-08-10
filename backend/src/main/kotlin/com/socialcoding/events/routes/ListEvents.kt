@@ -1,8 +1,14 @@
 package com.socialcoding.events.routes
 
-import com.socialcoding.events.listEvents
+import com.socialcoding.events.getAllEvents
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 
-/** GET /api/events — every event for the public Events page and its calendar. */
-val LIST_EVENTS: suspend RoutingContext.() -> Unit = { call.respond(listEvents()) }
+/**
+ * Retrieve all public events.
+ *
+ * GET /api/events
+ */
+val LIST_EVENTS: suspend RoutingContext.() -> Unit = {
+    call.respond(getAllEvents())
+}

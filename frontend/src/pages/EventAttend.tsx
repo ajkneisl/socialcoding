@@ -66,7 +66,7 @@ export default function EventAttend() {
         )
     }
 
-    const repeat = attend.data?.status === 'already'
+    const repeat = attend.data?.status === 'ALREADY'
 
     return (
         <Shell>

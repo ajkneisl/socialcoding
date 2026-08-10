@@ -1,6 +1,6 @@
 package com.socialcoding.projects.routes
 
-import com.socialcoding.auth.currentUserID
+import com.socialcoding.user.currentUserID
 import com.socialcoding.common.NotFound
 import com.socialcoding.projects.ProjectMembers
 import com.socialcoding.projects.members.models.MemberStatus

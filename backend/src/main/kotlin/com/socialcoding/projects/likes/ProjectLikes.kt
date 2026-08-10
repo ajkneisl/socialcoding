@@ -1,6 +1,7 @@
 package com.socialcoding.projects
 
-import com.socialcoding.db.Users
+import com.socialcoding.api.db.SqlTable
+import com.socialcoding.people.Users
 import com.socialcoding.projects.likes.models.LikeResult
 import com.socialcoding.projects.models.ProjectStatus
 import kotlin.uuid.Uuid
@@ -13,6 +14,7 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
+@SqlTable
 object ProjectLikes : Table("project_likes") {
     val projectID = uuid("project_id").references(Projects.id)
     val userID = uuid("user_id").references(Users.id)

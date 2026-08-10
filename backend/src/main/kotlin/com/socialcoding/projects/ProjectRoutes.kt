@@ -13,6 +13,7 @@ import com.socialcoding.projects.routes.RESUBMIT
 import com.socialcoding.projects.routes.SHOWCASE
 import com.socialcoding.projects.routes.UPDATE_DESIGN
 import com.socialcoding.projects.routes.UPDATE_MEMBERS
+import com.socialcoding.projects.routes.UPDATE_SEMESTER_DOC
 import com.socialcoding.projects.routes.UPDATE_TASKS
 import io.ktor.server.auth.authenticate
 import io.ktor.server.routing.Route
@@ -39,6 +40,7 @@ fun Route.projectRoutes() {
         post("/projects/{id}/resubmit", RESUBMIT)
         post("/projects/{id}/like", LIKE)
         put("/projects/{id}/design", UPDATE_DESIGN)
+        put("/projects/{id}/semester-doc", UPDATE_SEMESTER_DOC)
         put("/projects/{id}/members", UPDATE_MEMBERS)
         put("/projects/{id}/tasks", UPDATE_TASKS)
     }

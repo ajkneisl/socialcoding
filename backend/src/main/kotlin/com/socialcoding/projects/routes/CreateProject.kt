@@ -1,27 +1,28 @@
 package com.socialcoding.projects.routes
 
-import com.socialcoding.auth.currentRole
-import com.socialcoding.auth.currentUserID
+import com.socialcoding.user.currentRole
+import com.socialcoding.user.currentUserID
 import com.socialcoding.board.BoardSettings
 import com.socialcoding.common.APIError
-import com.socialcoding.db.Users
+import com.socialcoding.people.Users
 import com.socialcoding.projects.ProjectMembers
 import com.socialcoding.projects.Projects
 import com.socialcoding.projects.TaskInput
-import com.socialcoding.projects.encodeDesignDoc
+import com.socialcoding.projects.docs.encodeDesignDoc
+import com.socialcoding.projects.docs.insertDesignDoc
 import com.socialcoding.projects.members.models.MemberStatus
 import com.socialcoding.projects.models.DesignDocContent
+import com.socialcoding.projects.models.DesignDocKind
 import com.socialcoding.projects.models.ProjectStatus
 import com.socialcoding.projects.projectDetail
 import com.socialcoding.projects.replaceTasks
 import com.socialcoding.projects.toUuidOrNull
-import com.socialcoding.projects.withRequiredMilestones
+import com.socialcoding.projects.withPresentationMilestones
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 import kotlinx.serialization.Serializable
-import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -72,6 +73,7 @@ val CREATE_PROJECT: suspend RoutingContext.() -> Unit = handler@{
         val teamIds =
             Users.selectAll().where { Users.id inList requestedIds }.map { it[Users.id] }
         val leadID = body.teamLeadId?.toUuidOrNull()?.takeIf { it in teamIds } ?: userID
+        val submitted = System.currentTimeMillis()
         val id =
             Projects.insert {
                 it[title] = body.title.trim()
@@ -80,10 +82,17 @@ val CREATE_PROJECT: suspend RoutingContext.() -> Unit = handler@{
                 it[imageUrl] = body.imageUrl?.trim()?.ifBlank { null }
                 it[ownerId] = userID
                 it[teamLeadId] = leadID
-                it[designDoc] = encodeDesignDoc(body.designDoc)
                 it[status] = ProjectStatus.PENDING
-                it[submittedAt] = System.currentTimeMillis()
+                it[submittedAt] = submitted
             } get Projects.id
+        // The proposal is this semester's design doc; every later semester adds a returning one.
+        insertDesignDoc(
+            projectID = id,
+            semester = BoardSettings.currentSemester(),
+            kind = DesignDocKind.INITIAL,
+            content = encodeDesignDoc(body.designDoc),
+            submittedAt = submitted,
+        )
         teamIds.forEach { memberID ->
             ProjectMembers.insert {
                 it[ProjectMembers.projectID] = id
@@ -93,9 +102,10 @@ val CREATE_PROJECT: suspend RoutingContext.() -> Unit = handler@{
                     if (memberID == userID) MemberStatus.ACCEPTED else MemberStatus.PENDING
             }
         }
+        // The proposal is a design doc filing, so it stamps this semester's milestones.
         replaceTasks(
             id,
-            withRequiredMilestones(body.tasks, BoardSettings.presentationDates()),
+            withPresentationMilestones(body.tasks, BoardSettings.presentationDates()),
             teamIds.toSet(),
         )
         id

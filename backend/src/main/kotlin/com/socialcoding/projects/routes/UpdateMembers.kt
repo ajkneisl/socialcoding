@@ -1,13 +1,13 @@
 package com.socialcoding.projects.routes
 
-import com.socialcoding.auth.currentRole
-import com.socialcoding.auth.currentUserID
+import com.socialcoding.user.currentRole
+import com.socialcoding.user.currentUserID
 import com.socialcoding.common.APIError
 import com.socialcoding.common.InvalidAuthorization
 import com.socialcoding.common.NotFound
-import com.socialcoding.db.Users
+import com.socialcoding.people.Users
 import com.socialcoding.projects.ProjectMembers
-import com.socialcoding.projects.ProjectTasks
+import com.socialcoding.projects.tasks.ProjectTasks
 import com.socialcoding.projects.Projects
 import com.socialcoding.projects.members.models.MemberStatus
 import com.socialcoding.projects.projectDetail

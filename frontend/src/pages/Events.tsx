@@ -41,6 +41,7 @@ function EventCard({ event }: { event: Event }) {
                         {' · '}
                         {date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
                     </time>
+                    {event.recurring && <span className="text-text-soft">· every week</span>}
                     {event.location && <span className="text-text-soft">· {event.location}</span>}
                 </div>
 

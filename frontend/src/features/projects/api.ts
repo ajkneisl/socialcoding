@@ -1,5 +1,5 @@
 import { request } from '../../lib/request'
-import type { DesignDoc } from '../design/types'
+import type { DesignDoc, ReturningDoc } from '../design/types'
 import type {
     CreateProjectRequest,
     LikeResult,
@@ -36,6 +36,10 @@ export const createProject = (token: string, project: CreateProjectRequest) =>
 export const toggleProjectLike = (token: string, id: string) =>
     request<LikeResult>(`/api/projects/${id}/like`, { method: 'POST', token })
 
+/**
+ * Updates the project's details, and its proposal answers when `designDoc` is sent. Leave
+ * `designDoc` off to edit only the details — a proposal from a past semester is read-only.
+ */
 export const updateProjectDesign = (
     token: string,
     id: string,
@@ -44,9 +48,17 @@ export const updateProjectDesign = (
         description: string
         repoUrl?: string
         imageUrl?: string
-        designDoc: DesignDoc
+        designDoc?: DesignDoc
     },
 ) => request<ProjectDetail>(`/api/projects/${id}/design`, { method: 'PUT', body, token })
+
+/** Files or updates this semester's returning design doc. */
+export const updateSemesterDoc = (token: string, id: string, designDoc: ReturningDoc) =>
+    request<ProjectDetail>(`/api/projects/${id}/semester-doc`, {
+        method: 'PUT',
+        body: { designDoc },
+        token,
+    })
 
 export const updateProjectMembers = (
     token: string,

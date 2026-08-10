@@ -1,12 +1,15 @@
-package com.socialcoding.projects
+package com.socialcoding.projects.tasks
 
-import com.socialcoding.db.MappedTable
-import com.socialcoding.db.MapsTo
-import com.socialcoding.db.toEntity
+import com.socialcoding.api.db.MappedTable
+import com.socialcoding.api.db.MapsTo
+import com.socialcoding.api.db.SqlTable
+import com.socialcoding.api.db.toEntity
+import com.socialcoding.projects.Projects
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Table
 
+@SqlTable
 object ProjectTasks : Table("project_tasks") {
     val id = long("id").autoIncrement()
     val projectID = uuid("project_id").references(Projects.id)

@@ -8,6 +8,12 @@ export interface Event {
     burrowUrl: string | null
     imageUrl: string | null
     attendance: boolean
+    /** Repeats weekly on `startsAt`'s weekday and time; `startsAt` is the next occurrence. */
+    recurring: boolean
+    /** Whether this event posts to Discord at noon on the day it happens. */
+    announce: boolean
+    /** When the event was posted to Discord, or null if it hasn't been yet. */
+    announcedAt: number | null
     authorName: string
     createdAt: number
 }
@@ -21,10 +27,13 @@ export interface CreateEventRequest {
     burrowUrl?: string
     imageUrl?: string
     attendance?: boolean
+    recurring?: boolean
+    /** Post this event to the board's Discord channel at noon on the day it happens. */
+    announce?: boolean
 }
 
 export interface AttendResult {
-    status: 'recorded' | 'already'
+    status: 'RECORDED' | 'ALREADY'
     attendees: number
 }
 

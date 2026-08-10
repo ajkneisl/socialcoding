@@ -42,3 +42,46 @@ export const emptyDesignDoc = (): DesignDoc => ({
     contributionExpectations: '',
     communicationPlan: '',
 })
+
+/** The check-in a returning project files at the start of every semester after its first. */
+export interface ReturningDoc {
+    // Last semester
+    accomplishments: string
+    unfinished: string
+    challenges: string
+    // This semester
+    goals: string
+    scopeChanges: string
+    architectureChanges: string
+    // Teamwork
+    teamChanges: string
+    contributionExpectations: string
+    communicationPlan: string
+}
+
+export const emptyReturningDoc = (): ReturningDoc => ({
+    accomplishments: '',
+    unfinished: '',
+    challenges: '',
+    goals: '',
+    scopeChanges: '',
+    architectureChanges: '',
+    teamChanges: '',
+    contributionExpectations: '',
+    communicationPlan: '',
+})
+
+export type DesignDocKind = 'INITIAL' | 'RETURNING'
+
+/**
+ * One semester's design doc. The two specs ask different questions, so the answers arrive as
+ * separate shapes: exactly one of `initial` and `returning` is set, matching `kind`.
+ */
+export interface DesignDocEntry {
+    id: string
+    semester: string
+    kind: DesignDocKind
+    submittedAt: number
+    initial: DesignDoc | null
+    returning: ReturningDoc | null
+}

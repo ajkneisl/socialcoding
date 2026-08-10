@@ -1,7 +1,9 @@
 package com.socialcoding
 
-import com.socialcoding.auth.Auth
-import com.socialcoding.auth.authRoutes
+import com.socialcoding.api.Auth
+import com.socialcoding.api.Environment
+import com.socialcoding.api.Initialize
+import com.socialcoding.user.authRoutes
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.APIError
 import com.socialcoding.events.eventRoutes
@@ -27,7 +29,7 @@ import kotlinx.serialization.json.Json
 fun main(): Unit = runBlocking {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
 
-    runInitializers()
+    Initialize.runInitializers()
 
     embeddedServer(Netty, port = port, host = "0.0.0.0") { rootModule() }
         .start(wait = true)

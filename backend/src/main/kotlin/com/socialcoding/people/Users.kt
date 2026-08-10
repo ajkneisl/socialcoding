@@ -1,11 +1,13 @@
-package com.socialcoding.db
+package com.socialcoding.people
 
+import com.socialcoding.api.db.MappedTable
+import com.socialcoding.api.db.SqlTable
 import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
-import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Table
 
 /** [User] table. */
+@SqlTable
 object Users : Table("users") {
     val id = uuid("id").clientDefault { Uuid.random() }
     val googleID = varchar("google_id", 64).nullable().uniqueIndex()
@@ -48,5 +50,3 @@ data class User(
     val avatarUrl: String? = null,
     val listed: Boolean = true,
 )
-
-fun ResultRow.toUser(): User = toEntity()

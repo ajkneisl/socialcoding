@@ -15,7 +15,6 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 
-/** Public event listing plus board-only creation, editing, and removal. */
 fun Route.eventRoutes() {
     get("/events", LIST_EVENTS)
 

@@ -1,10 +1,12 @@
 package com.socialcoding.projects
 
-import com.socialcoding.db.MappedTable
-import com.socialcoding.db.Users
+import com.socialcoding.api.db.MappedTable
+import com.socialcoding.api.db.SqlTable
+import com.socialcoding.people.Users
 import com.socialcoding.projects.members.models.MemberStatus
 import org.jetbrains.exposed.v1.core.Table
 
+@SqlTable
 object ProjectMembers : Table("project_members") {
     val projectID = uuid("project_id").references(Projects.id)
     val userID = uuid("user_id").references(Users.id)

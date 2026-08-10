@@ -1,7 +1,7 @@
 package com.socialcoding.storage.routes
 
 import com.socialcoding.common.APIError
-import com.socialcoding.storage.ObjectStorage
+import com.socialcoding.api.ObjectStorage
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart

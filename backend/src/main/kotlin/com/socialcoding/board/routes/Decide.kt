@@ -1,16 +1,16 @@
 package com.socialcoding.board.routes
 
-import com.socialcoding.auth.argument
-import com.socialcoding.auth.body
-import com.socialcoding.auth.currentRole
-import com.socialcoding.auth.currentUserID
+import com.socialcoding.api.Discord
+import com.socialcoding.user.argument
+import com.socialcoding.user.body
+import com.socialcoding.user.currentRole
+import com.socialcoding.user.currentUserID
 import com.socialcoding.board.models.BoardDecision
 import com.socialcoding.common.InvalidAuthorization
 import com.socialcoding.common.NotFound
-import com.socialcoding.db.Role
-import com.socialcoding.db.exists
-import com.socialcoding.db.query
-import com.socialcoding.discord.Discord
+import com.socialcoding.people.Role
+import com.socialcoding.api.db.exists
+import com.socialcoding.api.db.query
 import com.socialcoding.projects.Projects
 import com.socialcoding.projects.models.ProjectStatus
 import com.socialcoding.projects.toUuid
@@ -28,7 +28,11 @@ import org.jetbrains.exposed.v1.jdbc.update
  */
 @Serializable private data class ReviewRequest(val note: String? = null)
 
-/** POST /api/board/projects/{id}/{decision} — finalize a decision on a project. */
+/**
+ * Finalize a decision on a project.
+ *
+ * POST /api/board/projects/{id}/{decision}
+ */
 val DECIDE: suspend RoutingContext.() -> Unit = {
     if (currentRole() != Role.BOARD) throw InvalidAuthorization()
 

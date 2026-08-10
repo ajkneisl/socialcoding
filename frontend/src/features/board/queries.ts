@@ -2,13 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth-context'
 import type { Role, User } from '../auth/types'
 import { projectKeys } from '../projects/queries'
-import type { PresentationDates } from '../projects/types'
+import type { BoardConfig } from './types'
 import {
     getBoardSettings,
     listBoardMembers,
     listPendingProjects,
     reviewProject,
-    syncMilestones,
     updateBoardSettings,
     updateMemberRole,
     updateMemberTitle,
@@ -62,10 +61,10 @@ export function useUpdateBoardSettings() {
     const { token } = useAuth()
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (dates: PresentationDates) => updateBoardSettings(token!, dates),
+        mutationFn: (config: BoardConfig) => updateBoardSettings(token!, config),
         onSuccess: (updated) => {
             queryClient.setQueryData(boardKeys.settings, updated)
-            queryClient.setQueryData(projectKeys.presentationDates, updated)
+            queryClient.setQueryData(projectKeys.presentationDates, updated.presentationDates)
         },
     })
 }
@@ -103,18 +102,6 @@ export function useUpdateMemberTitle() {
             queryClient.setQueryData<User[]>(boardKeys.members, (prev) =>
                 prev?.map((u) => (u.id === updated.id ? updated : u)),
             )
-        },
-    })
-}
-
-export function useSyncMilestones() {
-    const { token } = useAuth()
-    const queryClient = useQueryClient()
-    return useMutation({
-        mutationFn: () => syncMilestones(token!),
-        onSuccess: () => {
-            // Every project's deliverables may have changed.
-            queryClient.invalidateQueries({ queryKey: projectKeys.all })
         },
     })
 }

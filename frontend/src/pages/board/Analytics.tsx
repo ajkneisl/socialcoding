@@ -28,7 +28,7 @@ export default function BoardAnalytics() {
                     </p>
                     <div className="flex flex-col gap-5">
                         {summary.map((e) => (
-                            <div key={e.eventId}>
+                            <div key={`${e.eventId}-${e.startsAt}`}>
                                 <div className="mb-1 flex items-baseline justify-between gap-4">
                                     <Link
                                         to={`/events/${e.eventId}`}

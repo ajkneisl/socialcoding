@@ -1,6 +1,6 @@
 package com.socialcoding.projects.routes
 
-import com.socialcoding.auth.optionalUserID
+import com.socialcoding.user.optionalUserID
 import com.socialcoding.common.NotFound
 import com.socialcoding.projects.projectShowcase
 import com.socialcoding.projects.toUuidOrNull

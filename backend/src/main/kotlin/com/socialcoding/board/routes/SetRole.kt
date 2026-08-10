@@ -1,16 +1,16 @@
 package com.socialcoding.board.routes
 
-import com.socialcoding.auth.argument
-import com.socialcoding.auth.body
-import com.socialcoding.auth.currentUserID
-import com.socialcoding.auth.requireRole
+import com.socialcoding.api.db.find
+import com.socialcoding.api.db.update
 import com.socialcoding.common.InvalidAuthorization
-import com.socialcoding.db.Role
-import com.socialcoding.db.User
-import com.socialcoding.db.Users
-import com.socialcoding.db.find
-import com.socialcoding.db.update
+import com.socialcoding.people.Role
+import com.socialcoding.people.User
+import com.socialcoding.people.Users
 import com.socialcoding.projects.toUuid
+import com.socialcoding.user.argument
+import com.socialcoding.user.body
+import com.socialcoding.user.currentUserID
+import com.socialcoding.user.requireRole
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 import kotlinx.serialization.Serializable
@@ -22,7 +22,11 @@ import kotlinx.serialization.Serializable
  */
 @Serializable private data class RoleRequest(val role: Role)
 
-/** PUT /api/board/members/{id}/role — promote a member to the board or demote back to member. */
+/**
+ * Promote a member to the board or demote back to member.
+ *
+ * PUT /api/board/members/{id}/role
+ */
 val SET_ROLE: suspend RoutingContext.() -> Unit = {
     requireRole()
 

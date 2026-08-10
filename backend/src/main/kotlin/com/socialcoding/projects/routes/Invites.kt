@@ -1,6 +1,6 @@
 package com.socialcoding.projects.routes
 
-import com.socialcoding.auth.currentUserID
+import com.socialcoding.user.currentUserID
 import com.socialcoding.projects.invitesForUser
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext

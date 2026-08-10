@@ -1,6 +1,6 @@
 package com.socialcoding.projects.routes
 
-import com.socialcoding.auth.optionalUserID
+import com.socialcoding.user.optionalUserID
 import com.socialcoding.projects.listApprovedProjects
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext

@@ -1,12 +1,14 @@
 package com.socialcoding.projects
 
-import com.socialcoding.db.Users
+import com.socialcoding.api.db.SqlTable
+import com.socialcoding.people.Users
 import com.socialcoding.projects.models.Project
 import com.socialcoding.projects.models.ProjectStatus
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Table
 
+@SqlTable
 object Projects : Table("projects") {
     val id = uuid("id").clientDefault { Uuid.random() }
     val title = varchar("title", 200)
@@ -17,7 +19,11 @@ object Projects : Table("projects") {
     val imageUrl = varchar("image_url", 512).nullable()
     val ownerId = uuid("owner_id").references(Users.id)
     val teamLeadId = uuid("team_lead_id").references(Users.id).nullable()
-    val designDoc = text("design_doc").nullable()
+    /**
+     * The single design doc projects had before docs became per-semester. Nothing writes it
+     * anymore; `backfillInitialDesignDocs` reads it once to file it as the project's proposal.
+     */
+    val legacyDesignDoc = text("design_doc").nullable()
     val status =
         enumerationByName("status", 16, ProjectStatus::class).default(ProjectStatus.PENDING)
     val submittedAt = long("submitted_at")
