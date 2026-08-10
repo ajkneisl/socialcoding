@@ -104,6 +104,7 @@ export default function CreateProject() {
         }
         setError(null)
         setStep((s) => Math.min(s + 1, STEPS.length - 1))
+        window.scrollTo({top: 0, behavior: 'smooth'})
     }
 
     async function submit() {
@@ -158,7 +159,7 @@ export default function CreateProject() {
                 onSubmit={(e) => {
                     e.preventDefault()
                     if (step < STEPS.length - 1) next()
-                    else submit()
+                    else void submit()
                 }}
             >
                 {step === 0 && (
@@ -257,7 +258,14 @@ export default function CreateProject() {
 
                 <FormActions>
                     {step > 0 && (
-                        <Button variant="ghost" className="w-1/3" onClick={() => setStep(step - 1)}>
+                        <Button
+                            variant="ghost"
+                            className="w-1/3"
+                            onClick={() => {
+                                setStep(step - 1)
+                                window.scrollTo({top: 0, behavior: 'smooth'})
+                            }}
+                        >
                             Back
                         </Button>
                     )}
