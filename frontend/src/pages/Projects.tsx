@@ -16,14 +16,14 @@ export default function Projects() {
 
     return (
         <section className={page}>
-            <div className="flex flex-row items-center justify-between">
+            <div className="flex flex-row flex-wrap items-center justify-between gap-4">
                 <SectionHead eyebrow="Projects" title="Active projects">
                     View active projects from Social Coding members.
                 </SectionHead>
 
                 <LinkButton
                     to="/projects/new"
-                    className="mb-7 shadow-[0_0_0_0_rgba(255,211,2,0)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-4px_rgba(255,211,2,0.45)]"
+                    className="mb-7 max-md:w-full shadow-[0_0_0_0_rgba(255,211,2,0)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-4px_rgba(255,211,2,0.45)]"
                 >
                     Start a design doc
                 </LinkButton>
