@@ -18,6 +18,7 @@ services:
     backend:
         image: backend:${VERSION:-latest}
         environment:
+            ENV: PROD
             DB_URL: jdbc:postgresql://db:5432/socialcoding
             DB_USER: socialcoding
             DB_PASS: ${POSTGRES_PASSWORD:-socialcoding}
@@ -31,6 +32,7 @@ services:
             S3_SECRET_KEY: ${S3_SECRET_KEY:-}
             S3_ACL: ${S3_ACL:-}
             S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+            DISCORD: ${DISCORD:-}
         depends_on:
             db:
                 condition: service_healthy

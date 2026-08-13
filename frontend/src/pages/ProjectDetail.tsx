@@ -128,13 +128,13 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
     const updateMembers = useUpdateProjectMembers(detail.project.id)
     const [editing, setEditing] = useState(false)
     const [memberIds, setMemberIds] = useState<string[]>([])
-    const [leadId, setLeadId] = useState(detail.teamLeadId)
+    const [leadId, setLeadId] = useState(detail.teamLeadID)
 
     // Seed with accepted members *and* outstanding invites, so re-saving the team keeps pending
     // invitees instead of silently dropping them.
     function startEditing() {
         setMemberIds([...detail.members, ...detail.pendingMembers].map((m) => m.id))
-        setLeadId(detail.teamLeadId)
+        setLeadId(detail.teamLeadID)
         updateMembers.reset()
         setEditing(true)
     }
@@ -169,8 +169,7 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
             {editing ? (
                 <div className="flex flex-col gap-[0.9rem]">
                     <p className="m-0 text-[0.85rem] text-text-soft">
-                        Search people to invite them. New teammates get a pending invite they accept
-                        from their account; promote anyone to hand off the team lead role.
+                        Search people to invite them.
                     </p>
                     <TeamPicker
                         people={people}
@@ -199,7 +198,7 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
                             <li key={m.id} className="flex items-center gap-[0.65rem]">
                                 <Avatar name={m.name} avatarUrl={m.avatarUrl} size="sm" />
                                 <span className="font-medium">{m.name}</span>
-                                {m.id === detail.teamLeadId && (
+                                {m.id === detail.teamLeadID && (
                                     <Badge variant="board">team lead</Badge>
                                 )}
                             </li>
@@ -612,7 +611,7 @@ export default function ProjectDetail() {
         return <PageMessage>Loading…</PageMessage>
     }
 
-    const lead = detail.members.find((m) => m.id === detail.teamLeadId)
+    const lead = detail.members.find((m) => m.id === detail.teamLeadID)
 
     return (
         <section className={page}>

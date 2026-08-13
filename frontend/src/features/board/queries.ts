@@ -4,7 +4,9 @@ import type { Role, User } from '../auth/types'
 import { projectKeys } from '../projects/queries'
 import type { BoardConfig } from './types'
 import {
+    deleteProject,
     getBoardSettings,
+    getFooterText,
     listBoardMembers,
     listPendingProjects,
     reviewProject,
@@ -17,6 +19,19 @@ export const boardKeys = {
     pending: ['board', 'pending'] as const,
     settings: ['board', 'settings'] as const,
     members: ['board', 'members'] as const,
+    footer: ['site', 'footer'] as const,
+}
+
+/**
+ * The footer's meeting line, or '' when the board hasn't set one. Runs for everyone, signed in or
+ * not, so it stays cached across navigation rather than refetching on every page.
+ */
+export function useFooterText() {
+    return useQuery({
+        queryKey: boardKeys.footer,
+        queryFn: getFooterText,
+        staleTime: 5 * 60 * 1000,
+    })
 }
 
 export function usePendingProjects() {
@@ -48,6 +63,19 @@ export function useReviewProject() {
     })
 }
 
+export function useDeleteProject() {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: string) => deleteProject(token!, id),
+        onSuccess: (_data, id) => {
+            queryClient.invalidateQueries({ queryKey: boardKeys.pending })
+            queryClient.invalidateQueries({ queryKey: projectKeys.all })
+            queryClient.removeQueries({ queryKey: projectKeys.detail(id) })
+        },
+    })
+}
+
 export function useBoardSettings() {
     const { user, token } = useAuth()
     return useQuery({
@@ -65,6 +93,8 @@ export function useUpdateBoardSettings() {
         onSuccess: (updated) => {
             queryClient.setQueryData(boardKeys.settings, updated)
             queryClient.setQueryData(projectKeys.presentationDates, updated.presentationDates)
+            // The footer is rendered from its own public query, so push the new line into it.
+            queryClient.setQueryData(boardKeys.footer, updated.footerText)
         },
     })
 }

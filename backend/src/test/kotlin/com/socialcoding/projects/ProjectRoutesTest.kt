@@ -233,6 +233,7 @@ class ProjectRoutesTest {
     @Test
     fun `a team lead who isn't a real user falls back to the creator`() = testApplication {
         boot()
+        Fixtures.presentationDates()
         val creator = Fixtures.user()
 
         val created =
@@ -259,8 +260,40 @@ class ProjectRoutesTest {
     }
 
     @Test
+    fun `a project can't be created until the board has set both dates`() = testApplication {
+        boot()
+        val creator = Fixtures.token(Fixtures.user())
+
+        suspend fun create() =
+            client.post("/api/projects") {
+                bearerAuth(creator)
+                contentType(ContentType.Application.Json)
+                setBody("""{"title": "Too early", "description": "d", "tasks": []}""")
+            }
+
+        // Nothing set, then each date on its own: a half-set pair is still a dateless milestone.
+        assertEquals(HttpStatusCode.BadRequest, create().status, "no dates set")
+
+        Fixtures.presentationDates(mvp = "2026-10-01", final = "")
+        assertEquals(HttpStatusCode.BadRequest, create().status, "final date missing")
+
+        Fixtures.presentationDates(mvp = "", final = "2026-12-01")
+        assertEquals(HttpStatusCode.BadRequest, create().status, "mvp date missing")
+
+        Fixtures.presentationDates(mvp = "2026-10-01", final = "2026-12-01")
+        val created = create()
+        assertEquals(HttpStatusCode.Created, created.status)
+        // And the milestones it files carry those dates rather than being left blank.
+        assertEquals(
+            listOf("2026-10-01", "2026-12-01"),
+            created.decode<ProjectDetail>().tasks.filter { it.milestone }.map { it.dueDate },
+        )
+    }
+
+    @Test
     fun `a new project always carries the presentation milestones`() = testApplication {
         boot()
+        Fixtures.presentationDates()
         val creator = Fixtures.user()
 
         val detail =
@@ -330,6 +363,47 @@ class ProjectRoutesTest {
                 }
             assertEquals(HttpStatusCode.BadRequest, response.status, leadId)
         }
+    }
+
+    @Test
+    fun `a team edit with no lead named keeps the one it has`() = testApplication {
+        boot()
+        val owner = Fixtures.user()
+        val teammate = Fixtures.user()
+        val project = Fixtures.project(owner)
+
+        // No lead was ever promoted, so the project's creator holds it.
+        suspend fun editTeam(body: String, as_: Uuid = owner) =
+            client.put("/api/projects/$project/members") {
+                bearerAuth(Fixtures.token(as_))
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+
+        val kept = editTeam("""{"memberIds": ["$teammate"]}""")
+        assertEquals(HttpStatusCode.OK, kept.status)
+        assertEquals(owner.toString(), kept.decode<ProjectDetail>().teamLeadID)
+
+        // Same for a blank one, rather than making the client re-pick on every save.
+        assertEquals(
+            owner.toString(),
+            editTeam("""{"memberIds": ["$teammate"], "teamLeadId": ""}""")
+                .decode<ProjectDetail>()
+                .teamLeadID)
+
+        // A promotion still sticks, and is what a later lead-less edit then keeps. The teammate
+        // is already on the team from the edits above, invite outstanding.
+        assertEquals(
+            teammate.toString(),
+            editTeam("""{"memberIds": ["$teammate"], "teamLeadId": "$teammate"}""")
+                .decode<ProjectDetail>()
+                .teamLeadID)
+        // Handing off the lead hands off who may edit the team, so the new lead makes this one.
+        assertEquals(
+            teammate.toString(),
+            editTeam("""{"memberIds": ["$teammate"]}""", as_ = teammate)
+                .decode<ProjectDetail>()
+                .teamLeadID)
     }
 
     @Test

@@ -18,11 +18,18 @@ export const reviewProject = (
         token,
     })
 
+export const deleteProject = (token: string, id: string) =>
+    request<void>(`/api/board/projects/${id}`, { method: 'DELETE', token })
+
 export const getBoardSettings = (token: string) =>
     request<BoardConfig>('/api/board/settings', { token })
 
 export const updateBoardSettings = (token: string, config: BoardConfig) =>
     request<BoardConfig>('/api/board/settings', { method: 'PUT', body: config, token })
+
+/** The footer's meeting line. Public — the footer renders for signed-out visitors too. */
+export const getFooterText = () =>
+    request<{ footerText: string }>('/api/site/footer').then((r) => r.footerText)
 
 export const listBoardMembers = (token: string) => request<User[]>('/api/board/members', { token })
 

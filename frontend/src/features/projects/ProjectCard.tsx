@@ -21,6 +21,10 @@ export function ProjectCard({
     // children (hearts, repo links) still work above it.
     const to = linkToDoc ? `/projects/${project.id}/doc` : `/projects/${project.id}`
 
+    // Approved is the resting state of every project that's live, so labelling it says nothing.
+    // A review still in flight does, so that's the only status worth a badge here.
+    const status = showStatus && project.status !== 'APPROVED' ? project.status : null
+
     return (
         <article
             className={`${card} relative flex flex-col transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-text-faint`}
@@ -31,20 +35,19 @@ export function ProjectCard({
                         {project.title}
                     </Link>
                 </h3>
-                <div className="flex shrink-0 items-center gap-2">
-                    {showStatus && <StatusBadge status={project.status} />}
-                    {project.imageUrl && (
-                        <img
-                            src={project.imageUrl}
-                            alt=""
-                            className="h-12 w-12 shrink-0 rounded-md border border-line bg-bg-raised object-contain p-1"
-                        />
-                    )}
-                </div>
+                {project.imageUrl && (
+                    <img
+                        src={project.imageUrl}
+                        alt=""
+                        className="h-12 w-12 shrink-0 rounded-md border border-line bg-bg-raised object-contain p-1"
+                    />
+                )}
             </div>
             <p className="mb-3 mt-[0.45rem] text-text-soft">{project.description}</p>
             <div className="mt-auto flex items-center justify-between gap-3 pt-2 font-mono text-[0.8rem] text-text-faint">
-                {!showStatus && (
+                {showStatus ? (
+                    status && <StatusBadge status={status} />
+                ) : (
                     <span className="relative z-10">
                         <LikeButton project={project} />
                     </span>
@@ -63,7 +66,7 @@ export function ProjectCard({
                     </a>
                 )}
             </div>
-            {showStatus && project.status === 'REJECTED' && project.reviewNote && (
+            {status === 'REJECTED' && project.reviewNote && (
                 <ReviewNote note={project.reviewNote} className="mt-3" />
             )}
         </article>

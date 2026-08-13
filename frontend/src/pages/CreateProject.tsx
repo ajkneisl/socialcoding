@@ -44,7 +44,7 @@ export default function CreateProject() {
     const {user, token, loading} = useAuth()
     const navigate = useNavigate()
     const {data: people = []} = usePeople()
-    const {data: presentationDates} = usePresentationDates()
+    const {data: presentationDates, isLoading: datesLoading} = usePresentationDates()
     const createProject = useCreateProject()
 
     const [step, setStep] = useState(0)
@@ -89,6 +89,25 @@ export default function CreateProject() {
                 </p>
                 <GoogleSignIn onError={setError} />
                 <FormError error={error} className="mt-4" />
+            </NoticeCard>
+        )
+    }
+
+    if (datesLoading) {
+        return <PageMessage>Loading…</PageMessage>
+    }
+
+    // Both required milestones are stamped from the board's dates. Without them a project would
+    // be filed with two dateless presentations, so the gate is here rather than at the last step
+    // — nobody should write a whole design doc only to be turned away on submit.
+    if (!presentationDates?.mvpDate || !presentationDates.finalDate) {
+        return (
+            <NoticeCard eyebrow="Design doc" title="Presentation dates aren't set yet">
+                <p className="text-text-soft">
+                    Every project's timeline is anchored to the MVP and final presentation dates,
+                    and the board hasn't set this semester's yet. Check back once they have, or
+                    reach out to a board member.
+                </p>
             </NoticeCard>
         )
     }
@@ -229,10 +248,7 @@ export default function CreateProject() {
                     <>
                         <h3 className="m-0">Deliverables</h3>
                         <p className="m-0 text-text-soft">
-                            Break the project into tasks with owners, due dates, and dependencies —
-                            they become your project timeline. Every project must include an MVP
-                            presentation and a final presentation; the board may adjust the
-                            timeline.
+                            Break the project into tasks with owners, due dates, and dependencies.
                         </p>
                         <DeliverablesEditor
                             tasks={tasks}

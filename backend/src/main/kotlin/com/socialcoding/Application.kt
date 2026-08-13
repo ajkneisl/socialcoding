@@ -3,13 +3,13 @@ package com.socialcoding
 import com.socialcoding.api.Auth
 import com.socialcoding.api.Environment
 import com.socialcoding.api.Initialize
-import com.socialcoding.user.authRoutes
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.APIError
 import com.socialcoding.events.eventRoutes
 import com.socialcoding.people.peopleRoutes
 import com.socialcoding.projects.projectRoutes
 import com.socialcoding.storage.uploadRoutes
+import com.socialcoding.user.authRoutes
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -31,8 +31,7 @@ fun main(): Unit = runBlocking {
 
     Initialize.runInitializers()
 
-    embeddedServer(Netty, port = port, host = "0.0.0.0") { rootModule() }
-        .start(wait = true)
+    embeddedServer(Netty, port = port, host = "0.0.0.0") { rootModule() }.start(wait = true)
 }
 
 /** Ktor root module. */
@@ -69,15 +68,16 @@ fun Application.rootModule() {
 
     install(StatusPages) {
         exception<APIError> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, cause)
+            call.respond(HttpStatusCode.BadRequest, hashMapOf("message" to cause.message))
         }
 
         exception<Throwable> { call, cause ->
             call.application.log.error("Unhandled error", cause)
             cause.printStackTrace()
+
             call.respond(
                 HttpStatusCode.InternalServerError,
-                APIError("Something went wrong"),
+                hashMapOf("message" to "Something went wrong"),
             )
         }
     }
@@ -87,9 +87,7 @@ fun Application.rootModule() {
             realm = "socialcoding"
             verifier(Auth.verifier)
             validate { credential ->
-                if (credential.payload.subject != null)
-                    JWTPrincipal(credential.payload)
-                else null
+                if (credential.payload.subject != null) JWTPrincipal(credential.payload) else null
             }
             challenge { _, _ ->
                 call.respond(

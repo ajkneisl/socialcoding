@@ -8,8 +8,7 @@ class ServerError(override val message: String) : Throwable(message)
 
 class NotFound(obj: String) : APIError("That $obj could not be found.")
 
-class InvalidAuthorization() :
-    Throwable("You do not have authorization for this.")
+class InvalidAuthorization() : Throwable("You do not have authorization for this.")
 
 @Serializable
 data class InvalidArguments(val arguments: Map<String, String>) :
@@ -34,4 +33,9 @@ fun missingArguments(vararg arguments: String): MissingArguments =
 /** When receiving a request, the JSON is malformed. */
 class MalformedBody : APIError("The body of this request is malformed.")
 
-class AuthorizationException(override val message: String) : Throwable(message)
+/**
+ * A sign-in that couldn't be completed, carrying the reason. Unlike [InvalidAuthorization], the
+ * message is written for the person signing in, so it goes back to them rather than becoming a
+ * generic 500.
+ */
+class AuthorizationException(override val message: String) : APIError(message)

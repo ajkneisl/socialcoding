@@ -64,6 +64,16 @@ val CREATE_PROJECT: suspend RoutingContext.() -> Unit = handler@{
         )
     }
 
+    // Both milestones are stamped from these, so submitting before they're set would file a
+    // timeline with two dateless presentations on it.
+    val dates = BoardSettings.presentationDates()
+    if (dates.mvpDate.isBlank() || dates.finalDate.isBlank()) {
+        return@handler call.respond(
+            HttpStatusCode.BadRequest,
+            APIError("The board hasn't set this semester's presentation dates yet."),
+        )
+    }
+
     val projectID = transaction {
         val requestedIds =
             (body.memberIds.mapNotNull { it.toUuidOrNull() } +
@@ -105,7 +115,7 @@ val CREATE_PROJECT: suspend RoutingContext.() -> Unit = handler@{
         // The proposal is a design doc filing, so it stamps this semester's milestones.
         replaceTasks(
             id,
-            withPresentationMilestones(body.tasks, BoardSettings.presentationDates()),
+            withPresentationMilestones(body.tasks, dates),
             teamIds.toSet(),
         )
         id

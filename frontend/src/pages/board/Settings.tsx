@@ -7,10 +7,6 @@ import { FormError } from '../../components/FormError'
 import { Spinner } from '../../components/Spinner'
 import { card } from '../../components/styles'
 
-/**
- * Save-button label reflecting a mutation's state. Both cards below PUT the whole config, so they
- * share one mutation and only the card whose fields are dirty shows "Saved".
- */
 function SaveLabel({ pending, saved, idle }: { pending: boolean; saved: boolean; idle: string }) {
     if (pending) {
         return (
@@ -37,20 +33,19 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
     const [finalDate, setFinalDate] = useState(initial.presentationDates.finalDate)
     const [channelID, setChannelID] = useState(initial.announcementChannelID)
     const [semester, setSemester] = useState(initial.currentSemester)
+    const [footerText, setFooterText] = useState(initial.footerText)
     const [persisted, setPersisted] = useState(initial)
-    /** Which card's Save was pressed last, so only that one reports "Saved". */
-    const [lastSaved, setLastSaved] = useState<'dates' | 'channel' | 'semester' | null>(null)
+    const [lastSaved, setLastSaved] = useState<'dates' | 'channel' | 'semester' | 'footer' | null>(
+        null,
+    )
 
     const dirty =
         mvpDate !== persisted.presentationDates.mvpDate ||
         finalDate !== persisted.presentationDates.finalDate
     const channelDirty = channelID !== persisted.announcementChannelID
     const semesterDirty = semester !== persisted.currentSemester
+    const footerDirty = footerText !== persisted.footerText
 
-    /**
-     * Each card saves only its own fields, carrying the other card's persisted values through
-     * untouched, so clicking one Save never commits half-finished edits from the other.
-     */
     function save(e: FormEvent) {
         e.preventDefault()
         setLastSaved('dates')
@@ -68,8 +63,6 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
             {
                 onSuccess: (saved) => {
                     setPersisted(saved)
-                    // The server strips a pasted "<#123>" down to digits; show what it stored so
-                    // the field doesn't read as unsaved forever.
                     setChannelID(saved.announcementChannelID)
                 },
             },
@@ -86,6 +79,21 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
                     setPersisted(saved)
                     // Clearing the box hands back the semester the calendar says it is.
                     setSemester(saved.currentSemester)
+                },
+            },
+        )
+    }
+
+    function saveFooter(e: FormEvent) {
+        e.preventDefault()
+        setLastSaved('footer')
+        update.mutate(
+            { ...persisted, footerText },
+            {
+                onSuccess: (saved) => {
+                    setPersisted(saved)
+                    // Trimmed on the way in, so show what actually got stored.
+                    setFooterText(saved.footerText)
                 },
             },
         )
@@ -129,11 +137,10 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
                 <div>
                     <h3 className="m-0">Presentation dates</h3>
                     <p className="m-0 mt-2 text-text-soft">
-                        Teams pick these up when they file a design doc: filing swaps last
-                        semester's MVP and Final Presentation milestones for a new pair on these
-                        dates. Projects that already filed keep the dates they were given.
+                        The dates filled in for project's final / mvp presentation tasks.
                     </p>
                 </div>
+
                 <div className="flex flex-wrap gap-[0.9rem] [&>label]:min-w-[11rem]">
                     <label>
                         MVP Presentation
@@ -143,6 +150,7 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
                             onChange={(e) => setMvpDate(e.target.value)}
                         />
                     </label>
+
                     <label>
                         Final Presentation
                         <input
@@ -152,6 +160,7 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
                         />
                     </label>
                 </div>
+
                 <FormError error={lastSaved === 'dates' ? update.error?.message : null} />
                 <Button type="submit" disabled={update.isPending || !dirty} className="self-start">
                     <SaveLabel
@@ -162,16 +171,47 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
                 </Button>
             </form>
 
+            <form className={`${card} flex flex-col gap-[0.9rem]`} onSubmit={saveFooter}>
+                <div>
+                    <h3 className="m-0">Footer</h3>
+                    <p className="m-0 mt-2 text-text-soft">
+                        The meeting line at the bottom of every page. Leave it blank to keep the
+                        default.
+                    </p>
+                </div>
+
+                <label>
+                    Meeting line
+                    <input
+                        value={footerText}
+                        onChange={(e) => setFooterText(e.target.value)}
+                        placeholder="Weekly Meetings · Bruininks Hall 312"
+                        maxLength={120}
+                    />
+                </label>
+
+                <FormError error={lastSaved === 'footer' ? update.error?.message : null} />
+                <Button
+                    type="submit"
+                    disabled={update.isPending || !footerDirty}
+                    className="self-start"
+                >
+                    <SaveLabel
+                        pending={update.isPending && lastSaved === 'footer'}
+                        saved={update.isSuccess && lastSaved === 'footer' && !footerDirty}
+                        idle="Save footer"
+                    />
+                </Button>
+            </form>
+
             <form className={`${card} flex flex-col gap-[0.9rem]`} onSubmit={saveChannel}>
                 <div>
                     <h3 className="m-0">Discord announcements</h3>
                     <p className="m-0 mt-2 text-text-soft">
-                        The channel events post to when you tick "Announce to Discord" while
-                        publishing. Announcements go out at noon on the day of the event.
-                        Right-click a channel in Discord and choose "Copy Channel ID" to get this.
-                        Leave it blank to turn announcements off.
+                        The channel events post to this Discord channel.
                     </p>
                 </div>
+
                 <label className="max-w-[22rem]">
                     Channel ID
                     <input
@@ -181,6 +221,7 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
                         inputMode="numeric"
                     />
                 </label>
+
                 <FormError error={lastSaved === 'channel' ? update.error?.message : null} />
                 <Button
                     type="submit"

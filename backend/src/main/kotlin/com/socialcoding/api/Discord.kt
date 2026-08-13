@@ -136,6 +136,24 @@ object Discord : Initializable {
         )
     }
 
+    /**
+     * When a project is deleted, move its channel to the archive section. The channel itself is
+     * left in place — the team's history outlives the project row, which holds the only pointer to
+     * it, so this has to run before the row is deleted.
+     */
+    suspend fun onProjectDeleted(projectID: Uuid) {
+        if (!isConfigured) return
+        moveChannel(
+            projectID,
+            """
+            This project has been removed by the board.
+            If you think this is a mistake, please reach out to a board member.
+            """
+                .trimIndent(),
+            credentials.archiveCategoryID,
+        )
+    }
+
     /** When a project is activated, move them to the projects section. */
     suspend fun onProjectActivated(projectID: Uuid) {
         if (!isConfigured) return

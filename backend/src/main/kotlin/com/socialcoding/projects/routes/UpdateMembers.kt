@@ -36,7 +36,11 @@ import org.jetbrains.exposed.v1.jdbc.update
  * @param teamLeadId The ID of the new team lead.
  */
 @Serializable
-private data class UpdateMembersRequest(val memberIds: List<String>, val teamLeadId: String)
+private data class UpdateMembersRequest(
+    val memberIds: List<String>,
+    /** Omit to keep the current lead, which is the project's creator until one is promoted. */
+    val teamLeadId: String? = null,
+)
 
 /** PUT /api/projects/{id}/members — replace a project's membership and team lead. */
 val UPDATE_MEMBERS: suspend RoutingContext.() -> Unit = handler@{
@@ -48,13 +52,18 @@ val UPDATE_MEMBERS: suspend RoutingContext.() -> Unit = handler@{
     val body = call.receive<UpdateMembersRequest>()
 
     val applied = transaction {
-        val leadID = body.teamLeadId.toUuidOrNull() ?: return@transaction false
+        val projectRow = Projects.selectAll().where { Projects.id eq projectID }.first()
+        val ownerID = projectRow[Projects.ownerId]
+        // Sending no lead keeps whoever holds it, which is the creator until someone is
+        // promoted. Sending an unreadable one is still an error rather than a silent no-op.
+        val requested = body.teamLeadId?.takeIf { it.isNotBlank() }
+        val leadID =
+            if (requested != null) requested.toUuidOrNull() ?: return@transaction false
+            else projectRow[Projects.teamLeadId] ?: ownerID
         val requestedIds = (body.memberIds.mapNotNull { it.toUuidOrNull() } + leadID).distinct()
         val teamIds =
             Users.selectAll().where { Users.id inList requestedIds }.map { it[Users.id] }
         if (leadID !in teamIds) return@transaction false
-        val ownerID =
-            Projects.selectAll().where { Projects.id eq projectID }.first()[Projects.ownerId]
         val existing =
             ProjectMembers.selectAll()
                 .where { ProjectMembers.projectID eq projectID }

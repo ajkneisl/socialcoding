@@ -44,6 +44,7 @@ object GoogleVerifier {
 
         if (claim("aud") != clientID)
             throw AuthorizationException("Credential issued for a different app")
+
         if (claim("email_verified") != "true") throw AuthorizationException("Email is not verified")
 
         val email = claim("email") ?: throw AuthorizationException("Credential is missing an email")

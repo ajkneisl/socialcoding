@@ -1,6 +1,7 @@
 package com.socialcoding
 
 import com.socialcoding.api.Auth
+import com.socialcoding.board.BoardSettings
 import com.socialcoding.events.EventAttendance
 import com.socialcoding.events.EventOccurrences
 import com.socialcoding.events.Events
@@ -55,6 +56,15 @@ object Fixtures {
 
     /** A session JWT for [id]. */
     fun token(id: Uuid): String = Auth.issue(id.toString())
+
+    /**
+     * Sets the board's presentation dates. Creating a project through the API needs these, since
+     * its two required milestones are stamped from them.
+     */
+    fun presentationDates(mvp: String = "2026-10-01", final: String = "2026-12-01") {
+        BoardSettings.set(BoardSettings.MVP_DATE, mvp)
+        BoardSettings.set(BoardSettings.FINAL_DATE, final)
+    }
 
     /**
      * Inserts a project owned by [owner] (who is implicitly its team lead) and returns its id.

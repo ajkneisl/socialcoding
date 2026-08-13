@@ -57,12 +57,15 @@ data class PresentationDates(
  *   when unset, which turns announcing off rather than failing.
  * @param currentSemester The semester design docs are filed under. Always the effective label, so
  *   it reads the same whether it was set by hand or derived from the calendar.
+ * @param footerText The meeting line in the site footer. Blank leaves the client on its built-in
+ *   default rather than showing an empty line.
  */
 @Serializable
 data class BoardConfig(
     val presentationDates: PresentationDates = PresentationDates(),
     val announcementChannelID: String = "",
     val currentSemester: String = "",
+    val footerText: String = "",
 )
 
 /** Reads and writes board configuration backed by [Settings]. */
@@ -85,7 +88,7 @@ object BoardSettings {
     val ANNOUNCEMENT_TIME = Setting("announcement_time", 12, Integer::parseInt, Integer::toString)
 
     /** The text to show for meeting times. */
-    val FOOTER = Setting.text("footer_text")
+    val FOOTER = Setting.text("footer_text") { it.trim().take(120) }
 
     /**
      * The semester design docs are filed under. Blank means "follow the calendar", which is the
@@ -123,6 +126,9 @@ object BoardSettings {
     /** The Discord channel events are announced to, or blank when announcing is off. */
     fun announcementChannelID(): String = get(ANNOUNCEMENT_CHANNEL)
 
+    /** The footer's meeting line, or blank to leave the client on its default. */
+    fun footerText(): String = get(FOOTER)
+
     /**
      * The semester design docs are filed under: whatever the board pinned, or the semester today
      * falls in. Safe to call inside an existing transaction (Exposed reuses it).
@@ -132,7 +138,7 @@ object BoardSettings {
 
     /** Everything the board configures, read as one payload. */
     fun config(): BoardConfig = transaction {
-        BoardConfig(presentationDates(), announcementChannelID(), currentSemester())
+        BoardConfig(presentationDates(), announcementChannelID(), currentSemester(), footerText())
     }
 
     /**
@@ -143,6 +149,7 @@ object BoardSettings {
         set(MVP_DATE, config.presentationDates.mvpDate)
         set(FINAL_DATE, config.presentationDates.finalDate)
         set(ANNOUNCEMENT_CHANNEL, config.announcementChannelID)
+        set(FOOTER, config.footerText)
         // config() hands back the derived label when nothing is pinned, so saving that same label
         // back means "leave it on the calendar" rather than pinning this semester forever.
         val semester = config.currentSemester.trim()

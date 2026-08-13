@@ -83,10 +83,22 @@ class ErrorTest {
     fun `authorization and server failures stay off the API error path`() {
         // These aren't APIErrors, so StatusPages sends a generic 500 instead of leaking detail.
         // Checked reflectively because the compiler already knows the answer for a literal type.
-        listOf(InvalidAuthorization(), ServerError("boom"), AuthorizationException("nope")).forEach {
+        listOf(InvalidAuthorization(), ServerError("boom")).forEach {
             assertFalse(APIError::class.java.isInstance(it), "${it::class.simpleName} would be a 400")
         }
         assertEquals("boom", ServerError("boom").message)
+    }
+
+    @Test
+    fun `a failed sign-in tells the caller why`() {
+        // The exception to the rule above: GoogleVerifier raises these with hand-written reasons
+        // ("a UMN account is required"), which are the whole point — a generic 500 would strand
+        // someone signing in with the wrong account. Nothing derived from the credential goes in.
+        val error = AuthorizationException("A University of Minnesota account is required")
+
+        assertTrue(APIError::class.java.isInstance(error), "the reason has to reach the client")
+        assertEquals("A University of Minnesota account is required", error.error)
+        assertEquals(error.error, error.message)
     }
 
     @Test

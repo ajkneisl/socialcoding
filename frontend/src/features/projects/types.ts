@@ -62,7 +62,8 @@ export interface ProjectDetail {
     designDocs: DesignDocEntry[]
     /** The semester docs are being filed for; the doc matching it is the live one. */
     currentSemester: string
-    teamLeadId: string
+    /** Always set — the API falls back to the project's creator when no lead was picked. */
+    teamLeadID: string
     members: ProjectMember[]
     /** Members who have been invited but haven't accepted yet. */
     pendingMembers: ProjectMember[]

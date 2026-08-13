@@ -7,4 +7,6 @@ export interface BoardConfig {
     announcementChannelID: string
     /** The semester design docs are filed under, e.g. "Fall 2026". */
     currentSemester: string
+    /** The meeting line in the site footer; blank keeps the client's built-in default. */
+    footerText: string
 }

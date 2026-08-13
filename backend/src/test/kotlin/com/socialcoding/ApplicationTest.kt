@@ -53,6 +53,9 @@ class ApplicationTest {
     application { rootModule() }
     TestDatabase.connect()
 
+    // A project can't be filed until the board has set the dates its milestones inherit.
+    Fixtures.presentationDates()
+
     val creatorId = ensureUser("creator@test.umn.edu", "Creator", Role.MEMBER)
     val teammateId = ensureUser("teammate@test.umn.edu", "Teammate", Role.MEMBER)
     val outsiderId = ensureUser("outsider@test.umn.edu", "Outsider", Role.MEMBER)

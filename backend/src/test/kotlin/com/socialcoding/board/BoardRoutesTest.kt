@@ -2,13 +2,22 @@ package com.socialcoding.board
 
 import com.socialcoding.Fixtures
 import com.socialcoding.TestDatabase
+import com.socialcoding.board.routes.FooterResponse
 import com.socialcoding.decode
 import com.socialcoding.people.Role
 import com.socialcoding.people.User
+import com.socialcoding.projects.ProjectLikes
+import com.socialcoding.projects.ProjectMembers
+import com.socialcoding.projects.Projects
+import com.socialcoding.projects.docs.DesignDocs
+import com.socialcoding.projects.docs.insertDesignDoc
+import com.socialcoding.projects.models.DesignDocKind
 import com.socialcoding.projects.models.ProjectDetail
 import com.socialcoding.projects.models.ProjectStatus
+import com.socialcoding.projects.tasks.ProjectTasks
 import com.socialcoding.rootModule
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -26,6 +35,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class BoardRoutesTest {
 
@@ -96,6 +108,37 @@ class BoardRoutesTest {
 
         val get = client.get("/api/board/settings") { bearerAuth(board) }
         assertEquals("123456789012345678", get.decode<BoardConfig>().announcementChannelID)
+    }
+
+    @Test
+    fun `the footer line round-trips and is readable without signing in`() = testApplication {
+        boot()
+        val board = Fixtures.token(Fixtures.user(role = Role.BOARD))
+
+        // Nothing set yet: blank, so the client keeps its built-in default.
+        assertEquals("", client.get("/api/site/footer").decode<FooterResponse>().footerText)
+
+        val set =
+            client.put("/api/board/settings") {
+                bearerAuth(board)
+                contentType(ContentType.Application.Json)
+                setBody("""{"footerText": "  Weekly Meetings · Tate Hall 101  "}""")
+            }
+        assertEquals(HttpStatusCode.OK, set.status)
+        assertEquals("Weekly Meetings · Tate Hall 101", set.decode<BoardConfig>().footerText)
+
+        // Anonymous visitors get it too, since the footer renders on every page.
+        assertEquals(
+            "Weekly Meetings · Tate Hall 101",
+            client.get("/api/site/footer").decode<FooterResponse>().footerText)
+
+        // Clearing it hands the client back to its default.
+        client.put("/api/board/settings") {
+            bearerAuth(board)
+            contentType(ContentType.Application.Json)
+            setBody("""{"footerText": ""}""")
+        }
+        assertEquals("", client.get("/api/site/footer").decode<FooterResponse>().footerText)
     }
 
     // --- members ----------------------------------------------------------------------------
@@ -288,6 +331,57 @@ class BoardRoutesTest {
         assertNull(detail().project.reviewNote)
     }
 
+
+    // --- deletion ---------------------------------------------------------------------------
+
+    @Test
+    fun `board deletes a project and everything filed against it`() = testApplication {
+        boot()
+        val board = Fixtures.token(Fixtures.user(role = Role.BOARD))
+        val owner = Fixtures.user()
+        val projectId = Fixtures.project(owner, status = ProjectStatus.APPROVED)
+        Fixtures.member(projectId, owner)
+        Fixtures.like(projectId, Fixtures.user())
+        Fixtures.task(projectId, "Ship the MVP")
+        transaction { insertDesignDoc(projectId, "Fall 2026", DesignDocKind.INITIAL, "{}") }
+
+        assertEquals(
+            HttpStatusCode.OK,
+            client.delete("/api/board/projects/$projectId") { bearerAuth(board) }.status)
+
+        transaction {
+            assertEquals(0L, Projects.selectAll().where { Projects.id eq projectId }.count())
+            assertEquals(
+                0L, ProjectMembers.selectAll().where { ProjectMembers.projectID eq projectId }.count())
+            assertEquals(
+                0L, ProjectLikes.selectAll().where { ProjectLikes.projectID eq projectId }.count())
+            assertEquals(
+                0L, ProjectTasks.selectAll().where { ProjectTasks.projectID eq projectId }.count())
+            assertEquals(
+                0L, DesignDocs.selectAll().where { DesignDocs.projectID eq projectId }.count())
+        }
+    }
+
+    @Test
+    fun `only the board can delete a project, and only one that exists`() = testApplication {
+        boot()
+        val board = Fixtures.token(Fixtures.user(role = Role.BOARD))
+        val member = Fixtures.token(Fixtures.user(role = Role.MEMBER))
+        val projectId = Fixtures.project(Fixtures.user())
+
+        // InvalidAuthorization surfaces as 500 through the generic handler.
+        assertEquals(
+            HttpStatusCode.InternalServerError,
+            client.delete("/api/board/projects/$projectId") { bearerAuth(member) }.status)
+        assertEquals(
+            HttpStatusCode.Unauthorized, client.delete("/api/board/projects/$projectId").status)
+        assertEquals(
+            HttpStatusCode.BadRequest,
+            client.delete("/api/board/projects/${Uuid.random()}") { bearerAuth(board) }.status)
+
+        // The refused attempts left the project in place.
+        assertTrue(transaction { Projects.selectAll().where { Projects.id eq projectId }.any() })
+    }
 
     private suspend fun ApplicationTestBuilder.decide(
         token: String,
