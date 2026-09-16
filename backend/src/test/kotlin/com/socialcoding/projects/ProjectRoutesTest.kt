@@ -392,10 +392,11 @@ class ProjectRoutesTest {
                 .teamLeadID)
 
         // A promotion still sticks, and is what a later lead-less edit then keeps. The teammate
-        // is already on the team from the edits above, invite outstanding.
+        // is already on the team from the edits above, invite outstanding. The creator lists
+        // themselves so they stay on the team after handing off.
         assertEquals(
             teammate.toString(),
-            editTeam("""{"memberIds": ["$teammate"], "teamLeadId": "$teammate"}""")
+            editTeam("""{"memberIds": ["$owner", "$teammate"], "teamLeadId": "$teammate"}""")
                 .decode<ProjectDetail>()
                 .teamLeadID)
         // Handing off the lead hands off who may edit the team, so the new lead makes this one.
@@ -427,7 +428,7 @@ class ProjectRoutesTest {
         val detail = updated.decode<ProjectDetail>()
         assertEquals(listOf(owner.toString()), detail.members.map { it.id })
         val task = detail.tasks.single { it.name == "Shared work" }
-        assertEquals(listOf(owner.toString()), task.assigneeIds, "the departed member is unassigned")
+        assertEquals(listOf(owner.toString()), task.assigneeIDs, "the departed member is unassigned")
     }
 
     @Test

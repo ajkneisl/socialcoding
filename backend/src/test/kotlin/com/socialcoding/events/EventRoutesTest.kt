@@ -24,9 +24,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class EventRoutesTest {
 
@@ -129,37 +126,6 @@ class EventRoutesTest {
     }
 
     @Test
-    fun `events are one-off unless marked recurring`() = testApplication {
-        boot()
-        val board = Fixtures.token(Fixtures.user(role = Role.BOARD))
-
-        assertFalse(createEvent(board).recurring, "a plain event doesn't repeat")
-
-        val weekly =
-            client
-                .post("/api/events") {
-                    bearerAuth(board)
-                    contentType(ContentType.Application.Json)
-                    setBody(
-                        """{"title": "Weekly sync", "summary": "s", "startsAt": 1000, "recurring": true}""")
-                }
-                .decode<Event>()
-        assertTrue(weekly.recurring)
-
-        // The flag is editable like any other field.
-        val stopped =
-            client
-                .put("/api/events/${weekly.id}") {
-                    bearerAuth(board)
-                    contentType(ContentType.Application.Json)
-                    setBody(
-                        """{"title": "Weekly sync", "summary": "s", "startsAt": 1000, "recurring": false}""")
-                }
-                .decode<Event>()
-        assertFalse(stopped.recurring)
-    }
-
-    @Test
     fun `announce is stored for the noon sweep rather than posted on publish`() = testApplication {
         boot()
         val board = Fixtures.token(Fixtures.user(role = Role.BOARD))
@@ -190,28 +156,6 @@ class EventRoutesTest {
                 }
                 .decode<Event>()
         assertFalse(quieted.announce)
-    }
-
-    @Test
-    fun `deleting a recurring event clears its banked occurrences`() = testApplication {
-        boot()
-        val board = Fixtures.token(Fixtures.user(role = Role.BOARD))
-        val event = createEvent(board, attendance = true)
-
-        // Bank an occurrence, as the nightly roll does, then make sure delete doesn't trip the
-        // occurrence table's foreign key.
-        transaction {
-            EventOccurrences.insert {
-                it[eventID] = event.id
-                it[startsAt] = event.startsAt
-                it[attendees] = 3
-            }
-        }
-
-        assertEquals(
-            HttpStatusCode.OK,
-            client.delete("/api/events/${event.id}") { bearerAuth(board) }.status)
-        assertEquals(0, transaction { EventOccurrences.selectAll().count() })
     }
 
     @Test
@@ -251,9 +195,14 @@ class EventRoutesTest {
         val member = Fixtures.token(Fixtures.user(role = Role.MEMBER))
 
         val noAttendance = createEvent(board, attendance = false)
+        val disabled = client.post("/api/events/${noAttendance.id}/attend") { bearerAuth(member) }
+        assertEquals(HttpStatusCode.BadRequest, disabled.status)
+        // The check-in page shows this reason verbatim, so the body has to carry it
+        // under the same key an APIError serializes to.
         assertEquals(
-            HttpStatusCode.BadRequest,
-            client.post("/api/events/${noAttendance.id}/attend") { bearerAuth(member) }.status)
+            """{"error":"Attendance isn't enabled for this event."}""",
+            disabled.bodyAsText(),
+        )
 
         // Starts tomorrow: check-in hasn't opened yet.
         val future =
@@ -262,9 +211,25 @@ class EventRoutesTest {
                 attendance = true,
                 startsAt = System.currentTimeMillis() + 24 * 60 * 60 * 1000L,
             )
+        val tooEarly = client.post("/api/events/${future.id}/attend") { bearerAuth(member) }
+        assertEquals(HttpStatusCode.BadRequest, tooEarly.status)
         assertEquals(
-            HttpStatusCode.BadRequest,
-            client.post("/api/events/${future.id}/attend") { bearerAuth(member) }.status)
+            """{"error":"Check-in opens an hour before the event starts."}""",
+            tooEarly.bodyAsText(),
+        )
+    }
+
+    @Test
+    fun `checking in to an event that isn't there says so`() = testApplication {
+        boot()
+        val member = Fixtures.token(Fixtures.user(role = Role.MEMBER))
+
+        // NotFound is thrown, not responded, so this covers the StatusPages path.
+        val missing = client.post("/api/events/999999/attend") { bearerAuth(member) }
+        assertEquals(
+            """{"error":"That event could not be found."}""",
+            missing.bodyAsText(),
+        )
     }
 
     @Test

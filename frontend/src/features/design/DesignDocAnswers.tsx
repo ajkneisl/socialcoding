@@ -1,9 +1,9 @@
-import { answersOf, sectionsFor } from './sections'
-import type { DesignDocEntry } from './types'
+import { sectionsFor } from './sections'
+import type { DesignDoc, DesignDocEntry, ReturningDoc } from './types'
 
 /** A filed doc's answers, read-only — the same layout whichever spec the doc follows. */
 export function DesignDocAnswers({ entry }: { entry: DesignDocEntry }) {
-    const answers = answersOf(entry)
+    const answers: Partial<DesignDoc & ReturningDoc> = entry.content
 
     return (
         <>

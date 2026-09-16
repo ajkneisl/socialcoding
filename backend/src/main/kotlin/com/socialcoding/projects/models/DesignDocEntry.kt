@@ -1,26 +1,53 @@
 package com.socialcoding.projects.models
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonClassDiscriminator
 
 /**
  * One semester's design doc for a project.
  *
- * The two specs ask different questions, so the answers travel as separate shapes rather than one
- * merged one: exactly one of [initial] and [returning] is filled in, matching [kind].
- *
- * @param id The unique ID of the doc.
- * @param semester The semester it was filed for, e.g. `"Fall 2026"`.
- * @param kind Which spec it answers.
- * @param submittedAt When it was filed, in epoch ms.
- * @param initial The proposal answers, when [kind] is [DesignDocKind.INITIAL].
- * @param returning The check-in answers, when [kind] is [DesignDocKind.RETURNING].
+ * @see DesignDocKind
  */
 @Serializable
-data class DesignDocEntry(
-    val id: String,
-    val semester: String,
-    val kind: DesignDocKind,
-    val submittedAt: Long,
-    val initial: DesignDocContent? = null,
-    val returning: ReturningDocContent? = null,
-)
+@OptIn(ExperimentalSerializationApi::class)
+@JsonClassDiscriminator("kind")
+sealed class DesignDocEntry {
+    /** The unique ID of the doc. */
+    abstract val id: String
+
+    /** The semester it was filed for, like `"Fall 2026"`. */
+    abstract val semester: String
+
+    /** When it was filed, in epoch ms. */
+    abstract val submittedAt: Long
+
+    /** Which type of design doc this is. */
+    val kind: DesignDocKind
+        get() =
+            when (this) {
+                is Initial -> DesignDocKind.INITIAL
+                is Returning -> DesignDocKind.RETURNING
+            }
+
+    /** A project's opening proposal, filed for the semester it started in. */
+    @Serializable
+    @SerialName("INITIAL")
+    data class Initial(
+        override val id: String,
+        override val semester: String,
+        override val submittedAt: Long,
+        val content: DesignDocContent,
+    ) : DesignDocEntry()
+
+    /** A returning project's check-in, filed at the start of every semester after its first. */
+    @Serializable
+    @SerialName("RETURNING")
+    data class Returning(
+        override val id: String,
+        override val semester: String,
+        override val submittedAt: Long,
+        val content: ReturningDocContent,
+    ) : DesignDocEntry()
+}

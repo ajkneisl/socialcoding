@@ -73,15 +73,26 @@ export const emptyReturningDoc = (): ReturningDoc => ({
 
 export type DesignDocKind = 'INITIAL' | 'RETURNING'
 
-/**
- * One semester's design doc. The two specs ask different questions, so the answers arrive as
- * separate shapes: exactly one of `initial` and `returning` is set, matching `kind`.
- */
-export interface DesignDocEntry {
+interface FiledDoc {
     id: string
     semester: string
-    kind: DesignDocKind
     submittedAt: number
-    initial: DesignDoc | null
-    returning: ReturningDoc | null
 }
+
+/** A project's opening proposal, filed for the semester it started in. */
+export interface InitialDocEntry extends FiledDoc {
+    kind: 'INITIAL'
+    content: DesignDoc
+}
+
+/** A returning project's check-in, filed at the start of every semester after its first. */
+export interface ReturningDocEntry extends FiledDoc {
+    kind: 'RETURNING'
+    content: ReturningDoc
+}
+
+/**
+ * One semester's design doc. The two specs ask different questions, so they arrive as separate
+ * shapes tagged with `kind` — narrowing on it gives you the answers that spec actually has.
+ */
+export type DesignDocEntry = InitialDocEntry | ReturningDocEntry

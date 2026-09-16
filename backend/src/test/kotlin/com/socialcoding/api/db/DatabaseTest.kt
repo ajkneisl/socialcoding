@@ -129,7 +129,7 @@ class DatabaseTest {
 
         val task = transaction { ProjectTasks.selectAll().single().toTask() }
 
-        assertEquals(listOf(owner.toString(), other.toString()), task.assigneeIds)
+        assertEquals(listOf(owner.toString(), other.toString()), task.assigneeIDs)
     }
 
     @Test

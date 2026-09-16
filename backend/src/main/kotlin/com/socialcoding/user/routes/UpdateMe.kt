@@ -2,10 +2,10 @@ package com.socialcoding.user.routes
 
 import com.socialcoding.api.db.find
 import com.socialcoding.api.db.query
-import com.socialcoding.user.body
-import com.socialcoding.user.currentUserID
 import com.socialcoding.people.User
 import com.socialcoding.people.Users
+import com.socialcoding.user.body
+import com.socialcoding.user.currentUserID
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 import kotlinx.serialization.Serializable
@@ -20,8 +20,7 @@ import org.jetbrains.exposed.v1.jdbc.update
  * @param linkedin The user's LinkedIn URL.
  * @param website The user's portfolio.
  * @param company Where the user works.
- * @param listed Whether to show on the public member directory. Omitted leaves
- *   it unchanged.
+ * @param listed Whether to show on the public member directory. Omitted leaves it unchanged.
  */
 @Serializable
 private data class UpdateProfileRequest(

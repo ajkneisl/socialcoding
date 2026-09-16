@@ -329,6 +329,9 @@ class ProjectQueriesTest {
 
         val asBoard = assertNotNull(projectDetail(project, Fixtures.user(), Role.BOARD))
         assertTrue(asBoard.canManageTeam)
+
+        // Having created it grants nothing once the lead is handed off.
+        assertNull(projectDetail(project, owner, Role.MEMBER))
     }
 
     @Test
@@ -341,7 +344,7 @@ class ProjectQueriesTest {
         Fixtures.invite(project, invitee, MemberStatus.PENDING)
 
         val detail = assertNotNull(projectDetail(project, owner, Role.MEMBER))
-        // The lead (here the owner, since none is set) is always listed with the team.
+        // The lead (here the creator) is always listed with the team.
         assertEquals(listOf("Member", "Owner"), detail.members.map { it.name })
         assertEquals(listOf("Invitee"), detail.pendingMembers.map { it.name })
         assertEquals(owner.toString(), detail.teamLeadID)
@@ -423,7 +426,7 @@ class ProjectQueriesTest {
     // --- A user's own projects --------------------------------------------------------------
 
     @Test
-    fun `a user's projects cover ownership, leading and membership but not invites`() {
+    fun `a user's projects cover leading and membership but not invites`() {
         val user = Fixtures.user()
         val someoneElse = Fixtures.user()
 
@@ -463,16 +466,6 @@ class ProjectQueriesTest {
     }
 
     // --- Row mapping ------------------------------------------------------------------------
-
-    @Test
-    fun `a project without a team lead shows the owner instead`() {
-        val owner = Fixtures.user(name = "Owner", avatarUrl = "https://example.test/owner.png")
-        Fixtures.project(owner, ProjectStatus.APPROVED)
-
-        val project = listApprovedProjects().single()
-        assertEquals("Owner", project.teamLeadName)
-        assertEquals("https://example.test/owner.png", project.teamLeadAvatarUrl)
-    }
 
     @Test
     fun `a project with a team lead shows the lead`() {

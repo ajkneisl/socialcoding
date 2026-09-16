@@ -1,7 +1,7 @@
 package com.socialcoding.projects.models
 
-import com.socialcoding.projects.tasks.ProjectTask
 import com.socialcoding.projects.members.models.ProjectMember
+import com.socialcoding.projects.tasks.ProjectTask
 import kotlinx.serialization.Serializable
 
 /**

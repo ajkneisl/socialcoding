@@ -10,7 +10,6 @@ import com.socialcoding.api.db.Database.resolveTable
 import com.socialcoding.api.db.Database.scope
 import com.socialcoding.camelCase
 import com.socialcoding.common.NotFound
-import com.socialcoding.projects.docs.backfillInitialDesignDocs
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -61,8 +60,7 @@ object Database : Initializable {
     )
 
     val tableAnnotationCache = ConcurrentHashMap<KClass<*>, Table>()
-    val entityMappingCache =
-        ConcurrentHashMap<Pair<KClass<*>, Table>, EntityMapping>()
+    val entityMappingCache = ConcurrentHashMap<Pair<KClass<*>, Table>, EntityMapping>()
     /**
      * Every [SqlTable]-annotated table, ordered so each follows the ones it references — the order
      * schema creation needs. Reverse it for FK-safe deletion, as the test schema does.
@@ -76,9 +74,7 @@ object Database : Initializable {
                 .filter { it.isAnnotationPresent(SqlTable::class.java) }
                 .map { clazz ->
                     clazz.kotlin.objectInstance
-                        ?: error(
-                            "@SqlTable ${clazz.simpleName} must be an object"
-                        )
+                        ?: error("@SqlTable ${clazz.simpleName} must be an object")
                 }
                 // Stable input order, so the sort below is reproducible.
                 .sortedBy { it.tableName }
@@ -109,9 +105,7 @@ object Database : Initializable {
                     ?: error("${kClass.simpleName} is not properly mapped.")
 
             annotation.table.objectInstance
-                ?: error(
-                    "@MappedTable table for ${kClass.simpleName} must be an object"
-                )
+                ?: error("@MappedTable table for ${kClass.simpleName} must be an object")
         }
 
     val scope =
@@ -125,11 +119,9 @@ object Database : Initializable {
 
     fun buildEntityMapping(kClass: KClass<*>, table: Table): EntityMapping {
         val constructor =
-            kClass.primaryConstructor
-                ?: error("${kClass.simpleName} has no primary constructor")
+            kClass.primaryConstructor ?: error("${kClass.simpleName} has no primary constructor")
 
-        val columnsByCamel =
-            table.columns.associateBy { it.name.camelCase.lowercase() }
+        val columnsByCamel = table.columns.associateBy { it.name.camelCase.lowercase() }
         val columnsByRawName = table.columns.associateBy { it.name.lowercase() }
 
         val params =
@@ -173,9 +165,6 @@ object Database : Initializable {
 
         query {
             SchemaUtils.createMissingTablesAndColumns(*tables.toTypedArray())
-            // The schema comes from the table objects rather than migrations, so the one data
-            // migration that couldn't ride along with it runs here, right after the tables exist.
-            backfillInitialDesignDocs()
         }
 
         LOGGER.info(
@@ -184,6 +173,18 @@ object Database : Initializable {
             tables.joinToString { it.tableName },
         )
     }
+
+    /**
+     * A round trip to the database, backing the readiness endpoint. Returns false rather than
+     * throwing so a dropped connection reads as "not ready" instead of a 500.
+     */
+    suspend fun isReachable(): Boolean =
+        try {
+            query { exec("SELECT 1") { it.next() } } == true
+        } catch (e: Exception) {
+            LOGGER.warn("Database readiness check failed", e)
+            false
+        }
 }
 
 /** Run [block] in a coroutine. */
@@ -208,8 +209,7 @@ inline fun <reified T : Any> ResultRow.toEntity(table: Table? = null): T {
                 pm.isJsonCollection && raw is String ->
                     Json.decodeFromString(serializer(pm.param.type), raw)
 
-                pm.param.type.classifier == String::class && raw !is String ->
-                    raw.toString()
+                pm.param.type.classifier == String::class && raw !is String -> raw.toString()
 
                 else -> raw
             }
@@ -250,11 +250,7 @@ suspend fun <T : Any> T.exists(): Boolean {
 
     return query {
         val table = resolveTable(entity::class)
-        table
-            .selectAll()
-            .where { entity.primaryKeyPredicate(table) }
-            .limit(1)
-            .any()
+        table.selectAll().where { entity.primaryKeyPredicate(table) }.limit(1).any()
     }
 }
 
@@ -269,19 +265,14 @@ suspend fun Table.exists(pk: Any): Boolean {
 
 /** Find [pk]. */
 suspend inline fun <reified T : Any> Table.find(pk: Any): T =
-    primaryKeyRow(pk)?.toEntity(this)
-        ?: throw NotFound(this::class.simpleName ?: "")
+    primaryKeyRow(pk)?.toEntity(this) ?: throw NotFound(this::class.simpleName ?: "")
 
 /** Find the primary key row. */
 suspend fun Table.primaryKeyRow(pk: Any): ResultRow? {
     val table = this
 
     return query {
-        table
-            .selectAll()
-            .where { table.singleKeyPredicate(pk) }
-            .limit(1)
-            .firstOrNull()
+        table.selectAll().where { table.singleKeyPredicate(pk) }.limit(1).firstOrNull()
     }
 }
 
@@ -302,12 +293,9 @@ private fun Table.singleKeyPredicate(pk: Any): Op<Boolean> {
 private fun Any.primaryKeyPredicate(table: Table): Op<Boolean> {
     val pkColumns =
         table.primaryKey?.columns?.takeIf { it.isNotEmpty() }
-            ?: error(
-                "Table '${table.tableName}' has no primary key to match against"
-            )
+            ?: error("Table '${table.tableName}' has no primary key to match against")
 
-    val propsByName =
-        this::class.memberProperties.associateBy { it.name.lowercase() }
+    val propsByName = this::class.memberProperties.associateBy { it.name.lowercase() }
 
     return pkColumns
         .map { column ->

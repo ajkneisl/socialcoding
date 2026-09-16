@@ -1,7 +1,6 @@
 package com.socialcoding.projects.docs
 
 import com.socialcoding.api.db.SqlTable
-import com.socialcoding.board.semesterLabel
 import com.socialcoding.projects.Projects
 import com.socialcoding.projects.models.DesignDocContent
 import com.socialcoding.projects.models.DesignDocEntry
@@ -17,70 +16,103 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
-import org.slf4j.LoggerFactory
 
 /**
- * Every design doc a project has filed, one row per semester. A project's first row is its
- * [DesignDocKind.INITIAL] proposal; each semester it returns adds a [DesignDocKind.RETURNING]
- * check-in, so the rows read as the project's history.
+ * A design doc corresponding to a project's semester.
+ *
+ * @see com.socialcoding.projects.models.Project
  */
 @SqlTable
 object DesignDocs : Table("design_docs") {
+    /** A unique ID of the design doc. */
     val id = uuid("id").clientDefault { Uuid.random() }
+
+    /** The ID of the corresponding project ID. */
     val projectID = uuid("project_id").references(Projects.id)
 
-    /** The semester the doc was filed for, e.g. `"Fall 2026"`. */
+    /** The semester that the doc was filled out for. */
     val semester = varchar("semester", 32)
+
+    /** If the design doc is initial or returning. */
     val kind = enumerationByName("kind", 16, DesignDocKind::class).default(DesignDocKind.INITIAL)
 
-    /** The answers as JSON — a [DesignDocContent] or [ReturningDocContent] to match [kind]. */
+    /** The JSON content, corresponding to the [kind]. */
     val content = text("content")
+
+    /** In epoch ms when the design doc was submitted. */
     val submittedAt = long("submitted_at")
 
     override val primaryKey = PrimaryKey(id)
 
     init {
-        // One doc per semester is the whole point; the routes upsert against this.
         uniqueIndex(projectID, semester)
     }
 }
 
-private val LOGGER = LoggerFactory.getLogger("DesignDocs")
-
-// encodeDefaults keeps blank answers present in responses instead of omitted.
 private val json = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
 }
 
-/** Decodes stored proposal answers, falling back to blanks when the JSON can't be read. */
+/**
+ * Decode the content of an initial design doc. If the contents are invalid, a blank doc is
+ * returned.
+ *
+ * @see DesignDocs.content
+ * @see DesignDocContent
+ */
 fun decodeDesignDoc(raw: String?): DesignDocContent =
     raw?.let { runCatching { json.decodeFromString<DesignDocContent>(it) }.getOrNull() }
         ?: DesignDocContent()
 
+/**
+ * Encode an initial design doc to a JSON string.
+ *
+ * @see DesignDocs.content
+ * @see DesignDocContent
+ */
 fun encodeDesignDoc(doc: DesignDocContent): String =
     json.encodeToString(DesignDocContent.serializer(), doc)
 
-/** Decodes stored check-in answers, falling back to blanks when the JSON can't be read. */
+/**
+ * Decode the content of a returning design doc. If the contents are invalid, a blank doc is
+ * returned.
+ *
+ * @see DesignDocs.content
+ * @see ReturningDocContent
+ */
 fun decodeReturningDoc(raw: String?): ReturningDocContent =
     raw?.let { runCatching { json.decodeFromString<ReturningDocContent>(it) }.getOrNull() }
         ?: ReturningDocContent()
 
+/**
+ * Encode a returning design doc to a JSON string.
+ *
+ * @see DesignDocs.content
+ * @see ReturningDocContent
+ */
 fun encodeReturningDoc(doc: ReturningDocContent): String =
     json.encodeToString(ReturningDocContent.serializer(), doc)
 
-/** Reads a row as the entry clients see, decoding [DesignDocs.content] against its kind. */
+/**
+ * Reads a row as the entry clients see, decoding [DesignDocs.content] against [DesignDocs.kind].
+ *
+ * The column is the stored discriminator, so it picks the shape here once; from this point on the
+ * type carries the kind and nothing has to check it again.
+ */
 fun ResultRow.toDesignDocEntry(): DesignDocEntry {
-    val kind = this[DesignDocs.kind]
+    val id = this[DesignDocs.id].toString()
+    val semester = this[DesignDocs.semester]
+    val submittedAt = this[DesignDocs.submittedAt]
     val raw = this[DesignDocs.content]
-    return DesignDocEntry(
-        id = this[DesignDocs.id].toString(),
-        semester = this[DesignDocs.semester],
-        kind = kind,
-        submittedAt = this[DesignDocs.submittedAt],
-        initial = if (kind == DesignDocKind.INITIAL) decodeDesignDoc(raw) else null,
-        returning = if (kind == DesignDocKind.RETURNING) decodeReturningDoc(raw) else null,
-    )
+
+    return when (this[DesignDocs.kind]) {
+        DesignDocKind.INITIAL ->
+            DesignDocEntry.Initial(id, semester, submittedAt, decodeDesignDoc(raw))
+
+        DesignDocKind.RETURNING ->
+            DesignDocEntry.Returning(id, semester, submittedAt, decodeReturningDoc(raw))
+    }
 }
 
 /** Every doc [projectID] has filed, newest first. Must be inside a transaction. */
@@ -90,7 +122,9 @@ fun designDocsOf(projectID: Uuid): List<DesignDocEntry> =
         .orderBy(DesignDocs.submittedAt, SortOrder.DESC)
         .map { it.toDesignDocEntry() }
 
-/** [projectID]'s doc for [semester], or null if it hasn't filed one. Must be inside a transaction. */
+/**
+ * [projectID]'s doc for [semester], or null if it hasn't filed one. Must be inside a transaction.
+ */
 fun designDocFor(projectID: Uuid, semester: String): DesignDocEntry? =
     DesignDocs.selectAll()
         .where { (DesignDocs.projectID eq projectID) and (DesignDocs.semester eq semester) }
@@ -116,37 +150,4 @@ fun insertDesignDoc(
 /** Replaces the answers on an already-filed doc. Must be inside a transaction. */
 fun updateDesignDocContent(docID: Uuid, content: String) {
     DesignDocs.update({ DesignDocs.id eq docID }) { it[DesignDocs.content] = content }
-}
-
-/**
- * Moves the docs of projects that predate semester design docs onto [DesignDocs], filing each as
- * the project's [DesignDocKind.INITIAL] proposal under the semester it was submitted in.
- *
- * Runs at boot because the schema is created from the table objects rather than from migrations.
- * Projects that already have a row are skipped, so running it again does nothing. Must be inside a
- * transaction.
- */
-fun backfillInitialDesignDocs(): Int {
-    val filed = DesignDocs.selectAll().map { it[DesignDocs.projectID] }.toSet()
-    val pending =
-        Projects.selectAll()
-            .map {
-                Triple(it[Projects.id], it[Projects.legacyDesignDoc], it[Projects.submittedAt])
-            }
-            .filter { (id, doc, _) -> id !in filed && doc != null }
-
-    pending.forEach { (id, doc, submittedAt) ->
-        insertDesignDoc(
-            projectID = id,
-            semester = semesterLabel(submittedAt),
-            kind = DesignDocKind.INITIAL,
-            content = doc!!,
-            submittedAt = submittedAt,
-        )
-    }
-
-    if (pending.isNotEmpty()) {
-        LOGGER.info("Backfilled {} project design docs into design_docs", pending.size)
-    }
-    return pending.size
 }

@@ -65,18 +65,6 @@ class AnnouncementsTest {
     }
 
     @Test
-    fun `a weekly event says so, a one-off doesn't`() {
-        assertContains(
-            EventAnnouncements.buildMessage(event(recurring = true)),
-            "repeats weekly",
-        )
-        assertFalse(
-            EventAnnouncements.buildMessage(event(recurring = false))
-                .contains("repeats weekly")
-        )
-    }
-
-    @Test
     fun `a location-less event doesn't leave a dangling separator`() {
         val details =
             EventAnnouncements.buildMessage(event(location = null)).lines()[1]
@@ -267,7 +255,6 @@ class AnnouncementsTest {
         summary: String = "A summary",
         startsAt: Long = 1_786_000_000_000,
         location: String? = null,
-        recurring: Boolean = false,
         announcedAt: Long? = null,
     ) =
         Event(
@@ -280,7 +267,6 @@ class AnnouncementsTest {
             burrowUrl = null,
             imageUrl = null,
             attendance = false,
-            recurring = recurring,
             announce = true,
             announcedAt = announcedAt,
             authorName = "Author",

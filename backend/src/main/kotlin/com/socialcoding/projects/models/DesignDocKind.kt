@@ -1,10 +1,14 @@
 package com.socialcoding.projects.models
 
-/** Which set of questions a semester's design doc asks. */
+/**
+ * If the design doc is for an initial or returning project.
+ *
+ * @see DesignDocEntry
+ */
 enum class DesignDocKind {
-    /** The project proposal, filed the semester the project starts. */
+    /** The initial proposal for the project. */
     INITIAL,
 
-    /** The check-in a returning project files at the start of every semester after that. */
+    /** A continuation of a project. */
     RETURNING,
 }

@@ -54,6 +54,33 @@ class ObjectStorageTest {
     }
 
     @Test
+    fun `stored keys are served as the type their extension implies`() {
+        // The serve route reads the type off the key instead of trusting the
+        // bucket, so every extension uploadImage can mint has to map back.
+        assertEquals("image/png", ObjectStorage.contentTypeForKey("uploads/a.png"))
+        assertEquals("image/jpeg", ObjectStorage.contentTypeForKey("uploads/a.jpg"))
+        assertEquals("image/webp", ObjectStorage.contentTypeForKey("uploads/a.webp"))
+        assertEquals("image/gif", ObjectStorage.contentTypeForKey("uploads/a.gif"))
+        assertEquals("image/svg+xml", ObjectStorage.contentTypeForKey("uploads/a.svg"))
+        assertEquals("image/png", ObjectStorage.contentTypeForKey("uploads/a.PNG"))
+    }
+
+    @Test
+    fun `a key with no extension we wrote is not servable`() {
+        // These reach the serve route as a 404 rather than being proxied back
+        // with whatever content type the bucket felt like returning.
+        listOf(
+                "uploads/a.html",
+                "uploads/a.svg.html",
+                "uploads/noextension",
+                "uploads/a.",
+            )
+            .forEach {
+                assertNull(ObjectStorage.contentTypeForKey(it), "expected $it to be refused")
+            }
+    }
+
+    @Test
     fun `stored keys live under a single prefix`() {
         // The serve route refuses any key outside it, so the prefix is part of the contract.
         assertEquals("uploads/", ObjectStorage.KEY_PREFIX)

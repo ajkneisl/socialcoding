@@ -1,7 +1,7 @@
 package com.socialcoding.storage.routes
 
-import com.socialcoding.common.APIError
 import com.socialcoding.api.ObjectStorage
+import com.socialcoding.common.APIError
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -10,10 +10,13 @@ import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.RoutingContext
 
 private const val IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable"
+private const val IMAGE_CSP = "default-src 'none'; sandbox"
+private const val SVG = "image/svg+xml"
 
 val SERVE_IMAGE: suspend RoutingContext.() -> Unit = handler@{
     val key = call.parameters.getAll("path")?.joinToString("/").orEmpty()
-    if (!key.startsWith(ObjectStorage.KEY_PREFIX) || key.contains("..")) {
+    val contentType = ObjectStorage.contentTypeForKey(key)
+    if (!key.startsWith(ObjectStorage.KEY_PREFIX) || key.contains("..") || contentType == null) {
         return@handler call.respond(
             HttpStatusCode.NotFound,
             APIError("Image not found."),
@@ -28,5 +31,11 @@ val SERVE_IMAGE: suspend RoutingContext.() -> Unit = handler@{
             )
 
     call.response.headers.append(HttpHeaders.CacheControl, IMAGE_CACHE_CONTROL)
-    call.respondBytes(obj.bytes, ContentType.parse(obj.contentType))
+    call.response.headers.append("Content-Security-Policy", IMAGE_CSP)
+    call.response.headers.append("X-Content-Type-Options", "nosniff")
+
+    if (contentType == SVG)
+        call.response.headers.append(HttpHeaders.ContentDisposition, "attachment")
+
+    call.respondBytes(obj.bytes, ContentType.parse(contentType))
 }

@@ -19,7 +19,6 @@ import io.ktor.server.routing.route
 
 /** Board only routes, plus the public read of what the board configures for the site. */
 fun Route.boardRoutes() {
-    // Rendered in the footer on every page, signed in or not.
     get("/site/footer", GET_FOOTER)
 
     authenticate("session") {

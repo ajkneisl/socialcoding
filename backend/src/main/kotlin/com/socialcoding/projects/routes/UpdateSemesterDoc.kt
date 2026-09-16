@@ -9,6 +9,7 @@ import com.socialcoding.projects.Projects
 import com.socialcoding.projects.docs.encodeReturningDoc
 import com.socialcoding.projects.docs.insertDesignDoc
 import com.socialcoding.projects.docs.updateDesignDocContent
+import com.socialcoding.projects.models.DesignDocEntry
 import com.socialcoding.projects.models.DesignDocKind
 import com.socialcoding.projects.models.ProjectStatus
 import com.socialcoding.projects.models.ReturningDocContent
@@ -51,7 +52,7 @@ val UPDATE_SEMESTER_DOC: suspend RoutingContext.() -> Unit = handler@{
     val existing = detail.designDocs.firstOrNull { it.semester == detail.currentSemester }
     // A project started this semester already has a doc for it — its proposal, which is edited
     // through /design. It doesn't also file a check-in on its first semester.
-    if (existing?.kind == DesignDocKind.INITIAL) {
+    if (existing is DesignDocEntry.Initial) {
         return@handler call.respond(
             HttpStatusCode.BadRequest,
             APIError("This semester's design doc is the project proposal"),

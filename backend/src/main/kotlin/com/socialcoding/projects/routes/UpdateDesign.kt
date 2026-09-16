@@ -11,6 +11,7 @@ import com.socialcoding.projects.docs.encodeDesignDoc
 import com.socialcoding.projects.docs.insertDesignDoc
 import com.socialcoding.projects.docs.updateDesignDocContent
 import com.socialcoding.projects.models.DesignDocContent
+import com.socialcoding.projects.models.DesignDocEntry
 import com.socialcoding.projects.models.DesignDocKind
 import com.socialcoding.projects.models.ProjectStatus
 import com.socialcoding.projects.projectDetail
@@ -66,7 +67,7 @@ val UPDATE_DESIGN: suspend RoutingContext.() -> Unit = handler@{
         )
     }
 
-    val proposal = detail.designDocs.firstOrNull { it.kind == DesignDocKind.INITIAL }
+    val proposal = detail.designDocs.filterIsInstance<DesignDocEntry.Initial>().firstOrNull()
     if (body.designDoc != null) {
         // A proposal only stays editable for the semester it was filed in; after that the team
         // edits the semester doc instead, and this route is just the project's details.

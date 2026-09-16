@@ -90,7 +90,6 @@ val CREATE_PROJECT: suspend RoutingContext.() -> Unit = handler@{
                 it[description] = body.description.trim()
                 it[repoUrl] = body.repoUrl?.trim()?.ifBlank { null }
                 it[imageUrl] = body.imageUrl?.trim()?.ifBlank { null }
-                it[ownerId] = userID
                 it[teamLeadId] = leadID
                 it[status] = ProjectStatus.PENDING
                 it[submittedAt] = submitted

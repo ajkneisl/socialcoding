@@ -8,6 +8,7 @@ import com.socialcoding.board.semesterLabel
 import com.socialcoding.decode
 import com.socialcoding.projects.Projects
 import com.socialcoding.projects.models.DesignDocContent
+import com.socialcoding.projects.models.DesignDocEntry
 import com.socialcoding.projects.models.DesignDocKind
 import com.socialcoding.projects.models.ProjectDetail
 import com.socialcoding.projects.models.ProjectStatus
@@ -27,7 +28,7 @@ import java.time.ZonedDateTime
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.eq
@@ -120,12 +121,13 @@ class DesignDocsTest {
             assertEquals(2, detail.designDocs.size)
             // Newest first, so this semester's check-in leads.
             val current = detail.designDocs.first()
-            assertEquals(DesignDocKind.RETURNING, current.kind)
+            assertIs<DesignDocEntry.Returning>(current)
             assertEquals("Spring 2027", current.semester)
-            assertEquals("Shipped the MVP", current.returning?.accomplishments)
-            assertNull(current.initial)
+            assertEquals("Shipped the MVP", current.content.accomplishments)
             // The proposal is still there, untouched.
-            assertEquals("Ship it", detail.designDocs.last().initial?.goal)
+            val proposal = detail.designDocs.last()
+            assertIs<DesignDocEntry.Initial>(proposal)
+            assertEquals("Ship it", proposal.content.goal)
 
             // Coming back for another semester means another review.
             assertEquals(ProjectStatus.PENDING, detail.project.status)
@@ -199,7 +201,9 @@ class DesignDocsTest {
 
         val edited = file("Second pass").decode<ProjectDetail>()
         assertEquals(2, edited.designDocs.size, "editing replaces the answers, it doesn't refile")
-        assertEquals("Second pass", edited.designDocs.first().returning?.goals)
+        val reFiled = edited.designDocs.first()
+        assertIs<DesignDocEntry.Returning>(reFiled)
+        assertEquals("Second pass", reFiled.content.goals)
         assertEquals(ProjectStatus.APPROVED, edited.project.status)
     }
 
@@ -256,7 +260,9 @@ class DesignDocsTest {
             assertEquals(HttpStatusCode.OK, details.status)
             val detail = details.decode<ProjectDetail>()
             assertEquals("Renamed", detail.project.title)
-            assertEquals("Ship it", detail.designDocs.single().initial?.goal)
+            val untouched = detail.designDocs.single()
+            assertIs<DesignDocEntry.Initial>(untouched)
+            assertEquals("Ship it", untouched.content.goal)
         }
 
     @Test
@@ -313,9 +319,8 @@ class DesignDocsTest {
             val detail =
                 client.get("/api/projects/$project") { bearerAuth(token) }.decode<ProjectDetail>()
             val doc = detail.designDocs.single()
-            assertEquals(DesignDocKind.INITIAL, doc.kind)
+            assertIs<DesignDocEntry.Initial>(doc)
             assertEquals(semesterLabel(millisAt(2025, 9)), doc.semester)
-            assertNotNull(doc.initial)
-            assertEquals("From the old column", doc.initial.goal)
+            assertEquals("From the old column", doc.content.goal)
         }
 }

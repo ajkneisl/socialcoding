@@ -311,7 +311,7 @@ class TaskRemindersTest {
             Projects.insert {
                 it[title] = "Project"
                 it[description] = "A test project"
-                it[ownerId] = owner
+                it[teamLeadId] = owner
                 it[this.active] = active
                 it[discordChannelId] = channel
                 it[submittedAt] = 0

@@ -138,7 +138,3 @@ export function sectionsFor(entry: DesignDocEntry): DesignSection<DesignDoc & Re
     return entry.kind === 'INITIAL' ? DESIGN_SECTIONS : RETURNING_SECTIONS
 }
 
-/** A doc's answers, whichever spec it follows. */
-export function answersOf(entry: DesignDocEntry): Partial<DesignDoc & ReturningDoc> {
-    return (entry.kind === 'INITIAL' ? entry.initial : entry.returning) ?? {}
-}

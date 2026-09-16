@@ -4,7 +4,15 @@ import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-/** Task as submitted by the client; dependencies reference indices into the submitted list. */
+/**
+ * A submitted task for the project.
+ *
+ * @param name The name of the task.
+ * @param assigneeIds The assigned users for the task.
+ * @param dueDate The date the task is due.
+ * @param dependsOn Other tasks that this one depends on.
+ * @param milestone If this is a MVP / Final milestone.
+ */
 @Serializable
 data class TaskInput(
     val name: String,
@@ -23,8 +31,8 @@ fun String.toUuid(): Uuid = Uuid.parse(trim())
 fun List<Uuid>.toIdJson(): String = Json.encodeToString(map { it.toString() })
 
 /** Decodes the JSON `assignee_ids` column back into user ids. */
-fun String.toUserIdList(): List<Uuid> =
-    runCatching { Json.decodeFromString<List<String>>(this) }
-        .getOrDefault(emptyList())
-        .mapNotNull { it.toUuidOrNull() }
-
+fun String.toUserIdList(): List<Uuid> = runCatching {
+    Json.decodeFromString<List<String>>(this)
+}
+    .getOrDefault(emptyList())
+    .mapNotNull { it.toUuidOrNull() }

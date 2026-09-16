@@ -77,7 +77,6 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
             {
                 onSuccess: (saved) => {
                     setPersisted(saved)
-                    // Clearing the box hands back the semester the calendar says it is.
                     setSemester(saved.currentSemester)
                 },
             },
@@ -175,8 +174,7 @@ function SettingsForm({ initial }: { initial: BoardConfig }) {
                 <div>
                     <h3 className="m-0">Footer</h3>
                     <p className="m-0 mt-2 text-text-soft">
-                        The meeting line at the bottom of every page. Leave it blank to keep the
-                        default.
+                        The meeting line at the bottom of every page.
                     </p>
                 </div>
 

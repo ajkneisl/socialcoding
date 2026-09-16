@@ -9,7 +9,6 @@ import {
     useUpdateEvent,
 } from '../../features/events/queries'
 import type { Event } from '../../features/events/types'
-import { WEEKDAYS, nextWeekday, toTimeInput } from '../../features/events/util'
 import { Button } from '../../components/Button'
 import { FormError } from '../../components/FormError'
 import { ImageUpload } from '../../components/ImageUpload'
@@ -30,10 +29,6 @@ const emptyEvent = {
     burrowUrl: '',
     imageUrl: '',
     attendance: false,
-    /** When set, `weekday` and `time` stand in for `startsAt`, which is derived on submit. */
-    recurring: false,
-    weekday: String(new Date().getDay()),
-    time: '18:00',
     /** Queues the event to post to Discord at noon on the day it happens. */
     announce: false,
 }
@@ -66,7 +61,6 @@ function PublishedRow({
                         </Link>
                     </h3>
                     <p className="mb-0 mt-[0.1rem] font-mono text-[0.8rem] text-text-soft">
-                        {event.recurring && <span className="text-gold">weekly · </span>}
                         {new Date(event.startsAt).toLocaleString()}
                         {event.location && <> · {event.location}</>}
                         {event.attendance && <> · attendance on</>}
@@ -157,36 +151,10 @@ export default function BoardEvents() {
             burrowUrl: event.burrowUrl ?? '',
             imageUrl: event.imageUrl ?? '',
             attendance: event.attendance,
-            recurring: event.recurring,
-            weekday: String(new Date(event.startsAt).getDay()),
-            time: toTimeInput(event.startsAt),
             announce: event.announce,
         })
         updateEvent.reset()
         scrollToForm()
-    }
-
-    /**
-     * Switching to weekly carries the picked date over as its day and time (and back again), so
-     * toggling the checkbox never silently discards a schedule the user already entered.
-     */
-    function setRecurring(recurring: boolean) {
-        setForm((f) => {
-            if (recurring) {
-                const picked = f.startsAt ? new Date(f.startsAt) : null
-                return {
-                    ...f,
-                    recurring,
-                    weekday: String((picked ?? new Date()).getDay()),
-                    time: picked ? toTimeInput(picked.getTime()) : f.time,
-                }
-            }
-            return {
-                ...f,
-                recurring,
-                startsAt: toLocalInput(nextWeekday(Number(f.weekday), f.time)),
-            }
-        })
     }
 
     function submit() {
@@ -195,14 +163,11 @@ export default function BoardEvents() {
             title: form.title,
             summary: form.summary,
             body: form.body || undefined,
-            startsAt: form.recurring
-                ? nextWeekday(Number(form.weekday), form.time)
-                : new Date(form.startsAt).getTime(),
+            startsAt: new Date(form.startsAt).getTime(),
             location: form.location || undefined,
             burrowUrl: form.burrowUrl || undefined,
             imageUrl: form.imageUrl || undefined,
             attendance: form.attendance,
-            recurring: form.recurring,
             announce: form.announce,
         }
         if (editingId != null) {
@@ -212,8 +177,7 @@ export default function BoardEvents() {
         }
     }
 
-    const valid =
-        form.title.trim() && form.summary.trim() && (form.recurring ? form.time : form.startsAt)
+    const valid = form.title.trim() && form.summary.trim() && form.startsAt
     const editing = editingId != null
     const showForm = creating || editing
     const busy = createEvent.isPending || updateEvent.isPending
@@ -222,9 +186,7 @@ export default function BoardEvents() {
     const channelSet = !!settings?.announcementChannelID
     const alreadyAnnounced = !!events.find((e) => e.id === editingId)?.announcedAt
     /** The day the announcement goes out on — the event's own day — or null before one is picked. */
-    const announceAt = form.recurring
-        ? nextWeekday(Number(form.weekday), form.time)
-        : new Date(form.startsAt).getTime()
+    const announceAt = new Date(form.startsAt).getTime()
     const announceDay = Number.isNaN(announceAt)
         ? null
         : new Date(announceAt).toLocaleDateString(undefined, {
@@ -254,40 +216,14 @@ export default function BoardEvents() {
                                         maxLength={200}
                                     />
                                 </label>
-                                {form.recurring ? (
-                                    <>
-                                        <label>
-                                            Day of week
-                                            <select
-                                                value={form.weekday}
-                                                onChange={(e) => set('weekday', e.target.value)}
-                                            >
-                                                {WEEKDAYS.map((day, i) => (
-                                                    <option key={day} value={String(i)}>
-                                                        {day}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                        <label>
-                                            Time
-                                            <input
-                                                type="time"
-                                                value={form.time}
-                                                onChange={(e) => set('time', e.target.value)}
-                                            />
-                                        </label>
-                                    </>
-                                ) : (
-                                    <label>
-                                        Date &amp; time
-                                        <input
-                                            type="datetime-local"
-                                            value={form.startsAt}
-                                            onChange={(e) => set('startsAt', e.target.value)}
-                                        />
-                                    </label>
-                                )}
+                                <label>
+                                    Date &amp; time
+                                    <input
+                                        type="datetime-local"
+                                        value={form.startsAt}
+                                        onChange={(e) => set('startsAt', e.target.value)}
+                                    />
+                                </label>
                             </div>
                             <label>
                                 Summary
@@ -310,7 +246,7 @@ export default function BoardEvents() {
                                     <input
                                         value={form.location}
                                         onChange={(e) => set('location', e.target.value)}
-                                        placeholder="Bruininks Hall 315"
+                                        placeholder="Bruininks Hall 432"
                                     />
                                 </label>
                                 <label>
@@ -329,25 +265,6 @@ export default function BoardEvents() {
                                     onChange={(url) => set('imageUrl', url)}
                                 />
                             </label>
-                            <label className="flex-row items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    className="h-4 w-4 cursor-pointer accent-gold p-0"
-                                    checked={form.recurring}
-                                    onChange={(e) => setRecurring(e.target.checked)}
-                                />
-                                Repeats weekly
-                            </label>
-                            {form.recurring && (
-                                <p className="-mt-2 mb-0 font-mono text-[0.8rem] text-text-soft">
-                                    Next meeting{' '}
-                                    {new Date(
-                                        nextWeekday(Number(form.weekday), form.time),
-                                    ).toLocaleString()}
-                                    . The date rolls to the following week each night after it
-                                    happens.
-                                </p>
-                            )}
                             <label className="flex-row items-center gap-2">
                                 <input
                                     type="checkbox"
@@ -383,8 +300,6 @@ export default function BoardEvents() {
                                             : announceDay
                                               ? `Posts to Discord at noon on ${announceDay}.`
                                               : 'Posts to Discord at noon on the day of the event.'}
-                                        {form.recurring &&
-                                            ' Weekly events are announced again each occurrence.'}
                                     </p>
                                 )
                             )}

@@ -3,7 +3,7 @@ package com.socialcoding
 import com.socialcoding.api.Auth
 import com.socialcoding.people.Role
 import com.socialcoding.people.Users
-import com.socialcoding.projects.models.DesignDocKind
+import com.socialcoding.projects.models.DesignDocEntry
 import com.socialcoding.projects.models.ProjectDetail
 import com.socialcoding.projects.models.ProjectStatus
 import io.ktor.client.request.bearerAuth
@@ -102,14 +102,14 @@ class ApplicationTest {
     assertEquals(4, detail.tasks.size)
     // A new project's only design doc is its proposal, filed under the current semester.
     val proposal = detail.designDocs.single()
-    assertEquals(DesignDocKind.INITIAL, proposal.kind)
+    assertIs<DesignDocEntry.Initial>(proposal)
     assertEquals(detail.currentSemester, proposal.semester)
-    assertEquals("Ship a test", proposal.initial?.goal)
+    assertEquals("Ship a test", proposal.content.goal)
     // Index-based dependency was translated to the backend task's row id.
     val backendTask = detail.tasks.first { it.name == "Build backend" }
     val frontendTask = detail.tasks.first { it.name == "Build frontend" }
     assertEquals(listOf(backendTask.id), frontendTask.dependsOn)
-    assertEquals(listOf(creatorId.toString()), backendTask.assigneeIds)
+    assertEquals(listOf(creatorId.toString()), backendTask.assigneeIDs)
 
     // Pending docs are hidden from people outside the team. A hidden project surfaces as NotFound,
     // which the API currently maps onto 400 (every APIError responds BadRequest — arguably this
@@ -149,7 +149,9 @@ class ApplicationTest {
               """)
         }
     assertEquals(HttpStatusCode.OK, edited.status)
-    assertEquals("An updated goal", edited.detail().designDocs.single().initial?.goal)
+    val editedProposal = edited.detail().designDocs.single()
+    assertIs<DesignDocEntry.Initial>(editedProposal)
+    assertEquals("An updated goal", editedProposal.content.goal)
 
     // Only the team lead (or board) can modify the team. An authorization failure currently surfaces
     // as 500 (InvalidAuthorization isn't an APIError, so it falls through to the generic handler —

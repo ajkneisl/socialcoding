@@ -23,7 +23,6 @@ import io.ktor.server.routing.put
 
 /** Public project listing plus the authenticated design doc lifecycle. */
 fun Route.projectRoutes() {
-    // list every approved project, ordered by hearts; like state is filled in when signed in
     authenticate("session", optional = true) {
         get("/projects", LIST_PROJECTS)
         get("/projects/{id}/showcase", SHOWCASE)

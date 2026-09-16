@@ -6,7 +6,6 @@ export { ProjectTimeline } from './ProjectTimeline'
 export {
     DESIGN_SECTIONS,
     RETURNING_SECTIONS,
-    answersOf,
     sectionsFor,
     type DesignSection,
 } from './sections'
@@ -17,5 +16,7 @@ export {
     type DesignDoc,
     type DesignDocEntry,
     type DesignDocKind,
+    type InitialDocEntry,
     type ReturningDoc,
+    type ReturningDocEntry,
 } from './types'

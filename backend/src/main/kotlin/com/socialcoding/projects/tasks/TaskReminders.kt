@@ -1,8 +1,8 @@
 package com.socialcoding.projects.tasks
 
+import com.socialcoding.api.Discord
 import com.socialcoding.api.Initializable
 import com.socialcoding.api.Initialize
-import com.socialcoding.api.Discord
 import com.socialcoding.api.db.SqlTable
 import com.socialcoding.api.db.query
 import com.socialcoding.projects.Projects
@@ -30,29 +30,7 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.slf4j.LoggerFactory
 
-/**
- * A log of deadline reminders already delivered, so none is ever sent twice.
- *
- * Keyed on a task's stable attributes rather than its row id: [ProjectTasks] rows are deleted and
- * re-inserted whenever a team edits their deliverables, so ids churn. Keying on the project, task
- * name, due date, and reminder [offsetDays] means re-saving unchanged deliverables won't resend,
- * while renaming or rescheduling a task earns a fresh reminder.
- */
-@SqlTable
-object SentReminders : Table("sent_reminders") {
-    val projectID = uuid("project_id")
-    val taskName = varchar("task_name", 300)
-    val dueDate = varchar("due_date", 10)
-    val offsetDays = integer("offset_days")
-
-    override val primaryKey = PrimaryKey(projectID, taskName, dueDate, offsetDays)
-}
-
-/**
- * Posts deadline reminders for an active project's deliverables into its Discord channel, a week out
- * and again a day out. Runs once a day; every delivered reminder is recorded in [SentReminders] so
- * restarts and same-day re-runs stay idempotent.
- */
+/** Posts deadlines for tasks in the project's discord channel. */
 @Initialize
 object TaskReminders : Initializable {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -134,12 +112,18 @@ object TaskReminders : Initializable {
     internal suspend fun runSweep(today: LocalDate, delivery: ReminderDelivery) {
         pruneExpired(today)
 
-        pendingReminders(today).groupBy { it.channelID }.forEach { (channelID, reminders) ->
-            if (delivery.send(channelID, buildMessage(reminders))) {
-                markSent(reminders)
-                log.info("Sent {} deadline reminder(s) to channel {}", reminders.size, channelID)
+        pendingReminders(today)
+            .groupBy { it.channelID }
+            .forEach { (channelID, reminders) ->
+                if (delivery.send(channelID, buildMessage(reminders))) {
+                    markSent(reminders)
+                    log.info(
+                        "Sent {} deadline reminder(s) to channel {}",
+                        reminders.size,
+                        channelID,
+                    )
+                }
             }
-        }
     }
 
     /** Drops log rows for tasks whose due date has passed; their reminders are all done. */
@@ -149,17 +133,16 @@ object TaskReminders : Initializable {
 
     /** Every task whose window has arrived as of [today] and hasn't already been reminded about. */
     private suspend fun pendingReminders(today: LocalDate): List<Pending> {
-        val alreadySent =
-            query {
-                SentReminders.selectAll().mapTo(HashSet()) {
-                    reminderKey(
-                        it[SentReminders.projectID],
-                        it[SentReminders.taskName],
-                        it[SentReminders.dueDate],
-                        it[SentReminders.offsetDays],
-                    )
-                }
+        val alreadySent = query {
+            SentReminders.selectAll().mapTo(HashSet()) {
+                reminderKey(
+                    it[SentReminders.projectID],
+                    it[SentReminders.taskName],
+                    it[SentReminders.dueDate],
+                    it[SentReminders.offsetDays],
+                )
             }
+        }
 
         return query {
             ProjectTasks.join(Projects, JoinType.INNER, ProjectTasks.projectID, Projects.id)
@@ -195,7 +178,10 @@ object TaskReminders : Initializable {
         }
     }
 
-    /** Renders a channel's due tasks into a single message, grouped by window (soonest deadline last). */
+    /**
+     * Renders a channel's due tasks into a single message, grouped by window (soonest deadline
+     * last).
+     */
     internal fun buildMessage(reminders: List<Pending>): String {
         val sections =
             reminders
@@ -203,9 +189,11 @@ object TaskReminders : Initializable {
                 .toSortedMap(compareByDescending { it.offset })
                 .map { (window, group) ->
                     val lines =
-                        group.sortedBy { it.taskName }.joinToString("\n") {
-                            "• ${it.taskName} — due ${it.dueDate}"
-                        }
+                        group
+                            .sortedBy { it.taskName }
+                            .joinToString("\n") {
+                                "• ${it.taskName} — due ${it.dueDate}"
+                            }
                     "${window.heading}\n$lines"
                 }
 

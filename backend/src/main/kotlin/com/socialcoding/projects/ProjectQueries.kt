@@ -1,5 +1,6 @@
 package com.socialcoding.projects
 
+import com.socialcoding.api.db.toEntity
 import com.socialcoding.board.BoardSettings
 import com.socialcoding.board.PresentationDates
 import com.socialcoding.people.Role
@@ -12,12 +13,11 @@ import com.socialcoding.projects.models.Project
 import com.socialcoding.projects.models.ProjectDetail
 import com.socialcoding.projects.models.ProjectShowcase
 import com.socialcoding.projects.models.ProjectStatus
+import com.socialcoding.projects.tasks.ProjectTask
 import com.socialcoding.projects.tasks.ProjectTasks
-import com.socialcoding.projects.tasks.toTask
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.JoinType
-import org.jetbrains.exposed.v1.core.alias
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
@@ -29,18 +29,9 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 
-/** Aliased [Users] for the team lead, left-joined so projects without a lead still come through. */
-val ProjectLead = Users.alias("project_lead")
-
-fun projectsWithOwners() =
-    Projects.join(Users, JoinType.INNER, Projects.ownerId, Users.id)
-        .join(
-            ProjectLead,
-            JoinType.LEFT,
-            Projects.teamLeadId,
-            ProjectLead[Users.id],
-        )
-        .selectAll()
+/** Projects joined with their team lead's [Users] row. */
+fun projectsWithLeads() =
+    Projects.join(Users, JoinType.INNER, Projects.teamLeadId, Users.id).selectAll()
 
 /** The accepted team members of a project. Must be inside a transaction. */
 fun memberIdsOf(projectId: Uuid): List<Uuid> =
@@ -63,8 +54,9 @@ fun pendingMemberIdsOf(projectId: Uuid): List<Uuid> =
 /** The presentation milestones a design doc carries, in the order they're filed. */
 val PRESENTATION_MILESTONES = listOf("MVP Presentation", "Final Presentation")
 
-private fun TaskInput.isPresentationMilestone() =
-    PRESENTATION_MILESTONES.any { it.equals(name.trim(), ignoreCase = true) }
+private fun TaskInput.isPresentationMilestone() = PRESENTATION_MILESTONES.any {
+    it.equals(name.trim(), ignoreCase = true)
+}
 
 /**
  * Drops every task matching [drop], remapping dependency indices around the removals so the
@@ -133,13 +125,13 @@ fun currentTaskInputs(projectId: Uuid): List<TaskInput> {
         ProjectTasks.selectAll()
             .where { ProjectTasks.projectID eq projectId }
             .orderBy(ProjectTasks.dueDate)
-            .map { it.toTask() }
+            .map { it.toEntity<ProjectTask>() }
 
     val indexById = rows.mapIndexed { i, t -> t.id to i }.toMap()
     return rows.map { t ->
         TaskInput(
             name = t.name,
-            assigneeIds = t.assigneeIds,
+            assigneeIds = t.assigneeIDs,
             dueDate = t.dueDate,
             dependsOn = t.dependsOn.mapNotNull { indexById[it] },
             milestone = t.milestone,
@@ -180,8 +172,8 @@ fun replaceTasks(projectId: Uuid, submitted: List<TaskInput>, teamIds: Set<Uuid>
 }
 
 /**
- * Every project [userId] owns, leads, or has accepted membership on, regardless of board status.
- * Pending invites are excluded; those surface separately via [invitesForUser].
+ * Every project [userId] leads or has accepted membership on, regardless of board status. Pending
+ * invites are excluded; those surface separately via [invitesForUser].
  */
 fun projectsForUser(userId: Uuid): List<Project> = transaction {
     val memberOf =
@@ -191,11 +183,9 @@ fun projectsForUser(userId: Uuid): List<Project> = transaction {
                     (ProjectMembers.status eq MemberStatus.ACCEPTED)
             }
             .map { it[ProjectMembers.projectID] }
-    projectsWithOwners()
+    projectsWithLeads()
         .where {
-            (Projects.ownerId eq userId) or
-                (Projects.teamLeadId eq userId) or
-                (Projects.id inList memberOf)
+            (Projects.teamLeadId eq userId) or (Projects.id inList memberOf)
         }
         .orderBy(Projects.submittedAt)
         .map { it.toProject() }
@@ -211,7 +201,7 @@ fun invitesForUser(userId: Uuid): List<Project> = transaction {
             }
             .map { it[ProjectMembers.projectID] }
     if (invitedTo.isEmpty()) return@transaction emptyList()
-    projectsWithOwners()
+    projectsWithLeads()
         .where { Projects.id inList invitedTo }
         .orderBy(Projects.submittedAt)
         .map { it.toProject() }
@@ -223,7 +213,7 @@ fun invitesForUser(userId: Uuid): List<Project> = transaction {
  */
 fun listApprovedProjects(userID: Uuid? = null): List<Project> = transaction {
     val projects =
-        projectsWithOwners()
+        projectsWithLeads()
             .where { Projects.status eq ProjectStatus.APPROVED }
             .map { it.toProject() }
     withLikes(projects, userID)
@@ -254,13 +244,13 @@ private fun withLikes(projects: List<Project>, userID: Uuid?): List<Project> {
  */
 fun projectShowcase(projectID: Uuid, userID: Uuid?): ProjectShowcase? = transaction {
     val row =
-        projectsWithOwners()
+        projectsWithLeads()
             .where {
                 (Projects.id eq projectID) and (Projects.status eq ProjectStatus.APPROVED)
             }
             .firstOrNull() ?: return@transaction null
 
-    val leadId = row[Projects.teamLeadId] ?: row[Projects.ownerId]
+    val leadId = row[Projects.teamLeadId]
     val likes = likeCountsFor(listOf(projectID))[projectID] ?: 0
     val liked = userID != null && projectID in likedProjectIds(userID, listOf(projectID))
 
@@ -291,11 +281,11 @@ fun membersByIds(ids: Collection<Uuid>): List<ProjectMember> =
  */
 fun projectDetail(projectID: Uuid, userID: Uuid, role: Role): ProjectDetail? = transaction {
     val row =
-        projectsWithOwners().where { Projects.id eq projectID }.firstOrNull()
+        projectsWithLeads().where { Projects.id eq projectID }.firstOrNull()
             ?: return@transaction null
     val memberIds = memberIdsOf(projectID)
-    val leadId = row[Projects.teamLeadId] ?: row[Projects.ownerId]
-    val onTeam = userID in memberIds || userID == leadId || userID == row[Projects.ownerId]
+    val leadId = row[Projects.teamLeadId]
+    val onTeam = userID in memberIds || userID == leadId
     val isBoard = role == Role.BOARD
 
     if (!onTeam && !isBoard && row[Projects.status] != ProjectStatus.APPROVED) {
@@ -309,7 +299,7 @@ fun projectDetail(projectID: Uuid, userID: Uuid, role: Role): ProjectDetail? = t
         ProjectTasks.selectAll()
             .where { ProjectTasks.projectID eq projectID }
             .orderBy(ProjectTasks.dueDate)
-            .map { it.toTask() }
+            .map { it.toEntity<ProjectTask>() }
 
     ProjectDetail(
         project = row.toProject(),
@@ -326,13 +316,13 @@ fun projectDetail(projectID: Uuid, userID: Uuid, role: Role): ProjectDetail? = t
 
 /** Retrieve all projects that are not yet [ProjectStatus.APPROVED]. */
 fun getPendingProjects(): List<PendingProject> = transaction {
-    projectsWithOwners()
+    projectsWithLeads()
         .where { Projects.status neq ProjectStatus.APPROVED }
         .orderBy(Projects.submittedAt)
         .sortedBy { it[Projects.status] != ProjectStatus.PENDING }
         .map { row ->
             val project = row.toProject()
-            val leadID = row[Projects.teamLeadId] ?: row[Projects.ownerId]
+            val leadID = row[Projects.teamLeadId]
             PendingProject(
                 project,
                 leadID.toString(),

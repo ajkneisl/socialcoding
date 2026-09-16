@@ -42,7 +42,6 @@ val CREATE_EVENT: suspend RoutingContext.() -> Unit = handler@{
             it[burrowUrl] = body.burrowUrl?.trim()?.ifBlank { null }
             it[imageUrl] = body.imageUrl?.trim()?.ifBlank { null }
             it[attendance] = body.attendance
-            it[recurring] = body.recurring
             it[announce] = body.announce
             it[createdBy] = userID
             it[createdAt] = System.currentTimeMillis()

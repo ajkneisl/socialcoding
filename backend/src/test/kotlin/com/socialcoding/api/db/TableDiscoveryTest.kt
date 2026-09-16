@@ -2,7 +2,6 @@ package com.socialcoding.api.db
 
 import com.socialcoding.board.Settings
 import com.socialcoding.events.EventAttendance
-import com.socialcoding.events.EventOccurrences
 import com.socialcoding.events.Events
 import com.socialcoding.people.Users
 import com.socialcoding.projects.ProjectLikes
@@ -32,7 +31,6 @@ class TableDiscoveryTest {
             DesignDocs,
             Events,
             EventAttendance,
-            EventOccurrences,
             Settings,
             SentReminders,
         )

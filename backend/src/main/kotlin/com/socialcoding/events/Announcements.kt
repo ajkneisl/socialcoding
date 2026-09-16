@@ -143,7 +143,6 @@ object EventAnnouncements : Initializable {
         val details =
             buildList {
                 add("<t:${event.startsAt / 1000}:F>")
-                if (event.recurring) add("repeats weekly")
                 event.location?.let(::add)
             }
 

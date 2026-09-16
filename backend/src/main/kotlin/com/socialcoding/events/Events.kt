@@ -24,7 +24,6 @@ object Events : Table("events") {
     val burrowUrl = varchar("burrow_url", 512).nullable()
     val imageUrl = varchar("image_url", 512).nullable()
     val attendance = bool("attendance").default(false)
-    val recurring = bool("recurring").default(false)
     val announce = bool("announce").default(false)
     val announcedAt = long("announced_at").nullable()
     val createdBy = uuid("created_by").references(Users.id)
@@ -40,17 +39,14 @@ object Events : Table("events") {
  * @param title The event title.
  * @param summary A short blurb shown in the list and before "Read more".
  * @param body The full write-up revealed by "Read more".
- * @param startsAt When the next occurrence takes place, in epoch ms; drives the calendar.
+ * @param startsAt When the event takes place, in epoch ms; drives the calendar.
  * @param location The optional location.
  * @param burrowUrl The optional external Burrow link for the event.
  * @param imageUrl The optional promotional image.
  * @param attendance Whether attendance tracking is enabled for this event.
- * @param recurring Whether the event repeats weekly on [startsAt]'s weekday and time. Recurring
- *   events keep a single row: [RecurringEvents] advances [startsAt] a week at a time once an
- *   occurrence is past, so it always names the next meeting.
  * @param announce Whether to post this event to Discord at noon on the day it happens.
  * @param announcedAt When the event was announced to Discord, in epoch ms, or null if it hasn't
- *   been yet. Set once per occurrence so re-saving an event never reposts it.
+ *   been yet. Set once so re-saving an event never reposts it.
  * @param authorName The name of the board member who posted it. Joined from [Users] rather than
  *   stored on [Events], so [toEntity] can't fill it — [getEventsWithAuthor] copies it in.
  * @param createdAt When the event was posted, in epoch ms.
@@ -67,7 +63,6 @@ data class Event(
     val burrowUrl: String?,
     val imageUrl: String?,
     val attendance: Boolean,
-    val recurring: Boolean,
     val announce: Boolean,
     val announcedAt: Long?,
     val authorName: String = "",

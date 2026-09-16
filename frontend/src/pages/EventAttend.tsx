@@ -14,6 +14,9 @@ function Shell({ children }: { children: ReactNode }) {
     )
 }
 
+/**
+ * The page loaded when attending an event.
+ */
 export default function EventAttend() {
     const { id } = useParams()
     const eventId = Number(id)
@@ -22,7 +25,6 @@ export default function EventAttend() {
     const attend = useAttendEvent()
     const [signInError, setSignInError] = useState('')
 
-    // Fire the check-in exactly once, as soon as we have a signed-in user.
     const fired = useRef(false)
     useEffect(() => {
         if (!user || fired.current || Number.isNaN(eventId)) return
@@ -33,14 +35,14 @@ export default function EventAttend() {
     const eventName = event ? `“${event.title}”` : 'this event'
 
     if (loading) {
-        return <Shell>Checking your session…</Shell>
+        return <Shell>Gathering your details…</Shell>
     }
 
-    // Not signed in: prompt Google immediately, then the effect above checks them in.
     if (!user) {
         return (
             <Shell>
                 <h2>Check in to {eventName}</h2>
+
                 <p className="text-text-soft">Sign in with your UMN Google account to check in.</p>
                 <GoogleSignIn autoPrompt onError={setSignInError} />
                 {signInError && <p className="mt-3 text-red-400">{signInError}</p>}
@@ -56,7 +58,9 @@ export default function EventAttend() {
         return (
             <Shell>
                 <h2>Couldn't check you in</h2>
+
                 <p className="text-text-soft">{attend.error.message}</p>
+
                 <div className="mt-6 flex justify-center">
                     <LinkButton variant="ghost" to={`/events/${eventId}`}>
                         View event
@@ -74,17 +78,20 @@ export default function EventAttend() {
                 ✓
             </div>
             <h2>{repeat ? "You're already checked in" : "You're checked in!"}</h2>
+
             <p className="text-text-soft">
                 {repeat
                     ? `We already counted you for ${eventName}.`
                     : `Thanks for coming to ${eventName}.`}
             </p>
+
             <div className="mt-6 flex justify-center gap-3">
                 <LinkButton to={`/events/${eventId}`}>View event</LinkButton>
                 <LinkButton variant="ghost" to="/events">
                     All events
                 </LinkButton>
             </div>
+
             <p className="mt-6">
                 <Link to="/" className="font-mono text-[0.8rem]">
                     ← Home

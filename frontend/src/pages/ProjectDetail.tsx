@@ -21,13 +21,14 @@ import {
     DesignDocQuestions,
     ProjectTimeline,
     TeamPicker,
-    emptyDesignDoc,
     emptyReturningDoc,
     tasksToEditable,
     type DesignDoc,
     type DesignDocEntry,
     type EditableTask,
+    type InitialDocEntry,
     type ReturningDoc,
+    type ReturningDocEntry,
 } from '../features/design'
 import { useAuth } from '../auth-context'
 import { Avatar } from '../components/Avatar'
@@ -324,11 +325,11 @@ function ProposalForm({
     onDone,
 }: {
     detail: Detail
-    entry: DesignDocEntry
+    entry: InitialDocEntry
     onDone: () => void
 }) {
     const updateDesign = useUpdateProjectDesign(detail.project.id)
-    const [doc, setDoc] = useState<DesignDoc>(entry.initial ?? emptyDesignDoc())
+    const [doc, setDoc] = useState<DesignDoc>(entry.content)
 
     async function save() {
         try {
@@ -381,11 +382,11 @@ function SemesterDocForm({
     onDone,
 }: {
     detail: Detail
-    entry?: DesignDocEntry
+    entry?: ReturningDocEntry
     onDone: () => void
 }) {
     const save = useUpdateSemesterDoc(detail.project.id)
-    const [doc, setDoc] = useState<ReturningDoc>(entry?.returning ?? emptyReturningDoc())
+    const [doc, setDoc] = useState<ReturningDoc>(entry?.content ?? emptyReturningDoc())
 
     async function submit() {
         try {
@@ -480,7 +481,7 @@ function DesignDocsSection({ detail }: { detail: Detail }) {
                 ) : editing ? (
                     <SemesterDocForm
                         detail={detail}
-                        entry={current}
+                        entry={current?.kind === 'RETURNING' ? current : undefined}
                         onDone={() => setEditing(false)}
                     />
                 ) : current ? (

@@ -1,7 +1,5 @@
 package com.socialcoding.projects.routes
 
-import com.socialcoding.user.currentRole
-import com.socialcoding.user.currentUserID
 import com.socialcoding.common.APIError
 import com.socialcoding.common.InvalidAuthorization
 import com.socialcoding.common.NotFound
@@ -9,6 +7,8 @@ import com.socialcoding.projects.Projects
 import com.socialcoding.projects.models.ProjectStatus
 import com.socialcoding.projects.projectDetail
 import com.socialcoding.projects.toUuidOrNull
+import com.socialcoding.user.currentRole
+import com.socialcoding.user.currentUserID
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext

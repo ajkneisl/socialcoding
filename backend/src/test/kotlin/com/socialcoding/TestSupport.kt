@@ -3,7 +3,6 @@ package com.socialcoding
 import com.socialcoding.api.Auth
 import com.socialcoding.board.BoardSettings
 import com.socialcoding.events.EventAttendance
-import com.socialcoding.events.EventOccurrences
 import com.socialcoding.events.Events
 import com.socialcoding.people.Role
 import com.socialcoding.people.Users
@@ -67,11 +66,11 @@ object Fixtures {
     }
 
     /**
-     * Inserts a project owned by [owner] (who is implicitly its team lead) and returns its id.
+     * Inserts a project led by [lead], as if they'd created it, and returns its id.
      * [channel] sets the Discord channel id if the test needs one.
      */
     fun project(
-        owner: Uuid,
+        lead: Uuid,
         status: ProjectStatus = ProjectStatus.PENDING,
         active: Boolean = true,
         title: String = "Project",
@@ -81,7 +80,7 @@ object Fixtures {
         Projects.insert {
             it[Projects.title] = title
             it[description] = "A test project"
-            it[ownerId] = owner
+            it[teamLeadId] = lead
             it[Projects.status] = status
             it[Projects.active] = active
             it[discordChannelId] = channel
@@ -102,7 +101,7 @@ object Fixtures {
     /** Puts [user] on [project]'s team outright, skipping the invite. */
     fun member(project: Uuid, user: Uuid) = invite(project, user, MemberStatus.ACCEPTED)
 
-    /** Sets [project]'s team lead, which projects don't have by default. */
+    /** Hands [project]'s team lead to [user]. */
     fun lead(project: Uuid, user: Uuid) = transaction {
         Projects.update({ Projects.id eq project }) { it[teamLeadId] = user }
     }
@@ -140,7 +139,6 @@ object Fixtures {
         title: String = "Event",
         startsAt: Long = System.currentTimeMillis(),
         attendance: Boolean = false,
-        recurring: Boolean = false,
         announce: Boolean = false,
         announcedAt: Long? = null,
     ): Long = transaction {
@@ -150,7 +148,6 @@ object Fixtures {
             it[body] = ""
             it[Events.startsAt] = startsAt
             it[Events.attendance] = attendance
-            it[Events.recurring] = recurring
             it[Events.announce] = announce
             it[Events.announcedAt] = announcedAt
             it[createdBy] = author
@@ -164,15 +161,6 @@ object Fixtures {
             it[eventID] = event
             it[userID] = user
             it[recordedAt] = at
-        }
-    }
-
-    /** Banks a finished occurrence of a recurring [event], as the nightly roll does. */
-    fun occurrence(event: Long, startsAt: Long, attendees: Long) = transaction {
-        EventOccurrences.insert {
-            it[eventID] = event
-            it[EventOccurrences.startsAt] = startsAt
-            it[EventOccurrences.attendees] = attendees
         }
     }
 }

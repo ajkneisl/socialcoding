@@ -10,6 +10,7 @@ import BoardProjects from './pages/board/Projects'
 import BoardSettings from './pages/board/Settings'
 import CreateProject from './pages/CreateProject'
 import EventAttend from './pages/EventAttend'
+import EventCheckIn from './pages/EventCheckIn'
 import EventDetail from './pages/EventDetail'
 import Events from './pages/Events'
 import Home from './pages/Home'
@@ -21,6 +22,9 @@ import Projects from './pages/Projects'
 export default function App() {
     return (
         <Routes>
+            {/* Outside the Layout route: a projector screen wants no nav or footer. */}
+            <Route path="events/:id/checkin" element={<EventCheckIn />} />
+
             <Route element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="projects" element={<Projects />} />

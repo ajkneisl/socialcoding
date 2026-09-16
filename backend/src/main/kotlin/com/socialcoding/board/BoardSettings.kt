@@ -120,8 +120,7 @@ object BoardSettings {
      * The current presentation dates. Safe to call inside an existing transaction (Exposed reuses
      * it).
      */
-    fun presentationDates(): PresentationDates =
-        PresentationDates(get(MVP_DATE), get(FINAL_DATE))
+    fun presentationDates(): PresentationDates = PresentationDates(get(MVP_DATE), get(FINAL_DATE))
 
     /** The Discord channel events are announced to, or blank when announcing is off. */
     fun announcementChannelID(): String = get(ANNOUNCEMENT_CHANNEL)
@@ -150,8 +149,6 @@ object BoardSettings {
         set(FINAL_DATE, config.presentationDates.finalDate)
         set(ANNOUNCEMENT_CHANNEL, config.announcementChannelID)
         set(FOOTER, config.footerText)
-        // config() hands back the derived label when nothing is pinned, so saving that same label
-        // back means "leave it on the calendar" rather than pinning this semester forever.
         val semester = config.currentSemester.trim()
         set(
             CURRENT_SEMESTER,

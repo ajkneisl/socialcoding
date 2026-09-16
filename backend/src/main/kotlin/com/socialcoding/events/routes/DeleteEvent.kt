@@ -3,7 +3,6 @@ package com.socialcoding.events.routes
 import com.socialcoding.api.db.query
 import com.socialcoding.common.NotFound
 import com.socialcoding.events.EventAttendance
-import com.socialcoding.events.EventOccurrences
 import com.socialcoding.events.Events
 import com.socialcoding.events.getEventByID
 import com.socialcoding.user.argument
@@ -27,7 +26,6 @@ val DELETE_EVENT: suspend RoutingContext.() -> Unit = {
 
     query {
         EventAttendance.deleteWhere { EventAttendance.eventID eq eventID }
-        EventOccurrences.deleteWhere { EventOccurrences.eventID eq eventID }
         Events.deleteWhere { Events.id eq eventID }
     }
 

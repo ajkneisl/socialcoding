@@ -1,9 +1,9 @@
 package com.socialcoding.user.routes
 
 import com.socialcoding.api.db.find
-import com.socialcoding.user.currentUserID
 import com.socialcoding.people.User
 import com.socialcoding.people.Users
+import com.socialcoding.user.currentUserID
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 

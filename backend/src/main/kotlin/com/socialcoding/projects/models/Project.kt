@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
  * @param imageUrl The optional cover image.
  * @param status The board status of the project.
  * @param active If the project is active.
- * @param teamLeadName The name of the project's team lead (the owner if none is set).
+ * @param teamLeadName The name of the project's team lead.
  * @param teamLeadAvatarUrl The team lead's profile picture, if they have one.
  * @param submittedAt When the project was submitted in epoch ms.
  * @param reviewNote A note left by the board member who reviewed the project.

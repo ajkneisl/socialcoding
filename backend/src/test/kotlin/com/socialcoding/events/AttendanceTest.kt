@@ -71,22 +71,6 @@ class AttendanceTest {
     }
 
     @Test
-    fun `a recurring event reports one entry per meeting, most recent first`() = runBlocking {
-        val author = Fixtures.user()
-        val event =
-            Fixtures.event(author, title = "Weekly", startsAt = 3_000, attendance = true, recurring = true)
-        // Two meetings already banked by the nightly roll, plus check-ins for the upcoming one.
-        Fixtures.occurrence(event, startsAt = 1_000, attendees = 5)
-        Fixtures.occurrence(event, startsAt = 2_000, attendees = 8)
-        Fixtures.attend(event, Fixtures.user())
-
-        val summary = getAttendanceSummary()
-        assertEquals(listOf(3_000L, 2_000L, 1_000L), summary.map { it.startsAt })
-        assertEquals(listOf(1L, 8L, 5L), summary.map { it.attendees })
-        assertTrue(summary.all { it.title == "Weekly" && it.eventId == event })
-    }
-
-    @Test
     fun `the check-in window opens before the event and closes after it`() {
         // The route gates on these offsets, so their sign and scale are the contract.
         assertTrue(ATTENDANCE_OPENS_MS < 0, "check-in opens before the event starts")

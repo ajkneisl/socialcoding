@@ -25,24 +25,6 @@ object EventAttendance : Table("event_attendance") {
     override val primaryKey = PrimaryKey(eventID, userID)
 }
 
-/**
- * The attendance total of a finished occurrence of a recurring event.
- *
- * A recurring event is a single [Events] row whose date rolls forward every week, so its
- * [EventAttendance] rows can't accumulate: a member who checked in last week would be locked out of
- * this week's meeting by the (event, user) primary key. [com.socialcoding.events.RecurringEvents]
- * therefore banks each finished occurrence's headcount here and clears the check-ins, leaving the
- * next meeting a clean slate while analytics keep the history.
- */
-@SqlTable
-object EventOccurrences : Table("event_occurrences") {
-    val eventID = long("event_id").references(Events.id)
-    val startsAt = long("starts_at")
-    val attendees = long("attendees")
-
-    override val primaryKey = PrimaryKey(eventID, startsAt)
-}
-
 /** An attendee. */
 @Serializable
 data class Attendee(val name: String, val email: String, val recordedAt: Long)
@@ -111,40 +93,13 @@ suspend fun getEventAttendees(eventID: Long): List<Attendee> = query {
         }
 }
 
-/**
- * Attendance totals for every event with tracking enabled, most recent first. A recurring event
- * contributes one entry per meeting: its upcoming occurrence plus every occurrence already banked in
- * [EventOccurrences].
- */
-suspend fun getAttendanceSummary(): List<EventAttendanceSummary> {
-    val upcoming =
-        getAllEvents().filter { it.attendance }.map {
-            EventAttendanceSummary(
-                it.id,
-                it.title,
-                it.startsAt,
-                getAttendeeCount(it.id),
-            )
-        }
-
-    return (upcoming + pastOccurrences()).sortedByDescending { it.startsAt }
-}
-
-/** Banked totals for occurrences of recurring events that have already happened. */
-private suspend fun pastOccurrences(): List<EventAttendanceSummary> = query {
-    EventOccurrences.join(
-            Events,
-            JoinType.INNER,
-            EventOccurrences.eventID,
-            Events.id,
+/** Attendance totals for every event with tracking enabled, most recent first. */
+suspend fun getAttendanceSummary(): List<EventAttendanceSummary> =
+    getAllEvents().filter { it.attendance }.map {
+        EventAttendanceSummary(
+            it.id,
+            it.title,
+            it.startsAt,
+            getAttendeeCount(it.id),
         )
-        .selectAll()
-        .map {
-            EventAttendanceSummary(
-                it[EventOccurrences.eventID],
-                it[Events.title],
-                it[EventOccurrences.startsAt],
-                it[EventOccurrences.attendees],
-            )
-        }
-}
+    }

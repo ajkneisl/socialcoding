@@ -53,13 +53,12 @@ val UPDATE_MEMBERS: suspend RoutingContext.() -> Unit = handler@{
 
     val applied = transaction {
         val projectRow = Projects.selectAll().where { Projects.id eq projectID }.first()
-        val ownerID = projectRow[Projects.ownerId]
         // Sending no lead keeps whoever holds it, which is the creator until someone is
         // promoted. Sending an unreadable one is still an error rather than a silent no-op.
         val requested = body.teamLeadId?.takeIf { it.isNotBlank() }
         val leadID =
             if (requested != null) requested.toUuidOrNull() ?: return@transaction false
-            else projectRow[Projects.teamLeadId] ?: ownerID
+            else projectRow[Projects.teamLeadId]
         val requestedIds = (body.memberIds.mapNotNull { it.toUuidOrNull() } + leadID).distinct()
         val teamIds =
             Users.selectAll().where { Users.id inList requestedIds }.map { it[Users.id] }
@@ -74,10 +73,10 @@ val UPDATE_MEMBERS: suspend RoutingContext.() -> Unit = handler@{
             (ProjectMembers.projectID eq projectID) and (ProjectMembers.userID notInList teamIds)
         }
         teamIds.forEach { memberID ->
-            // The owner and team lead are always on the team; newly added members are
-            // invited and existing members keep whatever state they already had.
+            // The team lead is always on the team; newly added members are invited and
+            // existing members keep whatever state they already had.
             val desired =
-                if (memberID == ownerID || memberID == leadID) MemberStatus.ACCEPTED
+                if (memberID == leadID) MemberStatus.ACCEPTED
                 else existing[memberID] ?: MemberStatus.PENDING
             if (memberID in existing) {
                 if (existing[memberID] != desired) {

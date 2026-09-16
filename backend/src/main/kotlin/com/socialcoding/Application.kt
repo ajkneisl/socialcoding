@@ -2,6 +2,7 @@ package com.socialcoding
 
 import com.socialcoding.api.Auth
 import com.socialcoding.api.Environment
+import com.socialcoding.api.Health.healthEndpoints
 import com.socialcoding.api.Initialize
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.APIError
@@ -68,7 +69,7 @@ fun Application.rootModule() {
 
     install(StatusPages) {
         exception<APIError> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, hashMapOf("message" to cause.message))
+            call.respond(HttpStatusCode.BadRequest, hashMapOf("error" to cause.error))
         }
 
         exception<Throwable> { call, cause ->
@@ -77,7 +78,7 @@ fun Application.rootModule() {
 
             call.respond(
                 HttpStatusCode.InternalServerError,
-                hashMapOf("message" to "Something went wrong"),
+                hashMapOf("error" to "Something went wrong"),
             )
         }
     }
@@ -86,9 +87,11 @@ fun Application.rootModule() {
         jwt("session") {
             realm = "socialcoding"
             verifier(Auth.verifier)
+
             validate { credential ->
                 if (credential.payload.subject != null) JWTPrincipal(credential.payload) else null
             }
+
             challenge { _, _ ->
                 call.respond(
                     HttpStatusCode.Unauthorized,
@@ -96,10 +99,19 @@ fun Application.rootModule() {
                 )
             }
         }
+
+        bearer("health") {
+            realm = "health-check"
+
+            authenticate { (token) ->
+                if (token == Environment.getVariable("HEALTH_CHECK_KEY")) true else null
+            }
+        }
     }
 
     routing {
         route("/api") {
+            healthEndpoints()
             authRoutes()
             peopleRoutes()
             projectRoutes()

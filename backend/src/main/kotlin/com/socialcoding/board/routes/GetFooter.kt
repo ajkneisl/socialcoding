@@ -9,8 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class FooterResponse(val footerText: String)
 
 /**
- * The footer's meeting line, blank when the board hasn't set one. Unauthenticated: the footer
- * renders for signed-out visitors too.
+ * The footer's meeting line.
  *
  * GET /api/site/footer
  */
