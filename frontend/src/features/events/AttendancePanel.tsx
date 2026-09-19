@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAttendees } from './queries'
 import type { Event } from './types'
-import { Button } from '../../components/Button'
+import { ATTENDANCE_CLOSES_MS, ATTENDANCE_OPENS_MS } from './util'
+import { Button, LinkButton } from '../../components/Button'
 
 function downloadCsv(filename: string, rows: string[][]) {
     const escape = (v: string) => `"${v.replace(/"/g, '""')}"`
@@ -19,11 +20,33 @@ function downloadCsv(filename: string, rows: string[][]) {
 const time = (ms: number) =>
     new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
-/** Board-side check-in tools for an attendance-enabled event: QR, live count, CSV export. */
+/**
+ * Board-side check-in summary for an attendance-enabled event: the QR, how many
+ * have checked in, and the way through to the full screen.
+ *
+ * The attendee list itself lives on the standalone check-in page, so this only
+ * ever shows a count.
+ */
 export function AttendancePanel({ event }: { event: Event }) {
-    const { data: attendees = [], isLoading } = useAttendees(event.id, true)
+    const { data: attendees = [], isLoading } = useAttendees(event.id)
     const attendUrl = `${window.location.origin}/events/${event.id}/attend`
-    const [showList, setShowList] = useState(false)
+    const [copied, setCopied] = useState(false)
+
+    useEffect(() => {
+        if (!copied) return
+        const reset = setTimeout(() => setCopied(false), 1500)
+        return () => clearTimeout(reset)
+    }, [copied])
+
+    async function copyUrl() {
+        try {
+            await navigator.clipboard.writeText(attendUrl)
+            setCopied(true)
+        } catch {
+            // Clipboard is unavailable outside a secure context; the URL is on
+            // screen to copy by hand anyway.
+        }
+    }
 
     function exportCsv() {
         const rows = [
@@ -38,43 +61,52 @@ export function AttendancePanel({ event }: { event: Event }) {
     }
 
     return (
-        <div className="rounded-lg border border-line bg-bg-raised p-5">
+        <div className="rounded-xl border border-line bg-bg-raised p-5">
             <div className="flex flex-wrap items-start gap-6">
-                <div className="rounded-lg bg-white p-3">
-                    <QRCodeSVG value={attendUrl} size={150} bgColor="#ffffff" fgColor="#0c0e13" />
+                <div className="shrink-0 rounded-lg bg-white p-2.5">
+                    <QRCodeSVG value={attendUrl} size={128} bgColor="#ffffff" fgColor="#0c0e13" />
                 </div>
+
                 <div className="min-w-0 flex-1">
-                    <p className="m-0 text-[0.9rem] font-semibold">Attendance check-in</p>
-                    <p className="mb-2 mt-1 font-mono text-[0.78rem] text-text-soft">
-                        Display this QR at the event. Check-in is open{' '}
-                        {time(event.startsAt - 60 * 60 * 1000)}–
-                        {time(event.startsAt + 2 * 60 * 60 * 1000)}.
+                    <p className="m-0 font-mono text-[0.72rem] uppercase tracking-[0.16em] text-text-faint">
+                        Attendance
                     </p>
-                    <a
-                        href={attendUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="break-all font-mono text-[0.75rem]"
-                    >
-                        {attendUrl}
-                    </a>
-                    <div className="mt-4 flex flex-wrap items-center gap-4">
-                        <span className="font-mono text-[0.8rem] text-text-soft">
-                            {isLoading ? (
-                                'Loading…'
-                            ) : (
-                                <>
-                                    <span className="text-gold">{attendees.length}</span> checked in
-                                </>
-                            )}
+
+                    <p className="m-0 mt-2 flex items-baseline gap-2">
+                        <span className="text-[2.6rem] font-bold leading-none text-gold">
+                            {isLoading ? '—' : attendees.length}
                         </span>
-                        <Button
-                            variant="ghost"
-                            disabled={attendees.length === 0}
-                            onClick={() => setShowList((s) => !s)}
+                        <span className="text-[0.88rem] text-text-soft">checked in</span>
+                    </p>
+
+                    <p className="m-0 mt-2 font-mono text-[0.78rem] text-text-soft">
+                        Open {time(event.startsAt + ATTENDANCE_OPENS_MS)} –{' '}
+                        {time(event.startsAt + ATTENDANCE_CLOSES_MS)}
+                    </p>
+
+                    <div className="mt-4 flex items-center gap-2 rounded-lg border border-line-soft bg-bg py-2 pl-3 pr-2">
+                        <span className="min-w-0 flex-1 truncate font-mono text-[0.75rem] text-text-soft">
+                            {attendUrl}
+                        </span>
+
+                        <button
+                            type="button"
+                            onClick={copyUrl}
+                            className="shrink-0 cursor-pointer rounded-md border-0 bg-transparent px-2 py-1 font-mono text-[0.72rem] uppercase tracking-[0.1em] text-text-faint transition-colors hover:text-gold"
                         >
-                            {showList ? 'Hide list' : 'View attendees'}
-                        </Button>
+                            {copied ? 'Copied' : 'Copy'}
+                        </button>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-3">
+                        <LinkButton
+                            to={`/events/${event.id}/checkin`}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Open check-in screen
+                        </LinkButton>
+
                         <Button
                             variant="ghost"
                             disabled={attendees.length === 0}
@@ -85,31 +117,6 @@ export function AttendancePanel({ event }: { event: Event }) {
                     </div>
                 </div>
             </div>
-
-            {showList && attendees.length > 0 && (
-                <div className="mt-5 overflow-x-auto border-t border-line pt-4">
-                    <table className="w-full border-collapse text-left text-[0.85rem]">
-                        <thead>
-                            <tr className="font-mono text-[0.72rem] uppercase tracking-[0.08em] text-text-faint">
-                                <th className="py-2 pr-4 font-semibold">Name</th>
-                                <th className="py-2 pr-4 font-semibold">Email</th>
-                                <th className="py-2 font-semibold">Checked in</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {attendees.map((a, i) => (
-                                <tr key={`${a.email}-${i}`} className="border-t border-line-soft">
-                                    <td className="py-2 pr-4">{a.name}</td>
-                                    <td className="py-2 pr-4 text-text-soft">{a.email}</td>
-                                    <td className="py-2 font-mono text-[0.8rem] text-text-soft">
-                                        {new Date(a.recordedAt).toLocaleString()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
         </div>
     )
 }

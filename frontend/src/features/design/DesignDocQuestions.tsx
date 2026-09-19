@@ -1,25 +1,25 @@
-import type { DesignDoc } from './types'
 import type { DesignSection } from './sections'
 
-export function DesignDocQuestions({
+/** The questions in one section, as editable fields. Works against any all-text doc spec. */
+export function DesignDocQuestions<T extends Record<keyof T, string>>({
     doc,
     onChange,
     section,
 }: {
-    doc: DesignDoc
-    onChange: (doc: DesignDoc) => void
-    section: DesignSection
+    doc: T
+    onChange: (doc: T) => void
+    section: DesignSection<T>
 }) {
     return (
         <>
             {section.questions.map((q) => (
-                <label key={q.field}>
+                <label key={String(q.field)}>
                     {q.label}
                     <textarea
                         rows={3}
                         value={doc[q.field] ?? ''}
                         placeholder={q.placeholder}
-                        onChange={(e) => onChange({ ...doc, [q.field]: e.target.value })}
+                        onChange={(e) => onChange({ ...doc, [q.field]: e.target.value } as T)}
                     />
                 </label>
             ))}

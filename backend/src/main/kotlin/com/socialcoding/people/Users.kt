@@ -1,11 +1,13 @@
-package com.socialcoding.db
+package com.socialcoding.people
 
+import com.socialcoding.api.db.MappedTable
+import com.socialcoding.api.db.SqlTable
 import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
-import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Table
 
 /** [User] table. */
+@SqlTable
 object Users : Table("users") {
     val id = uuid("id").clientDefault { Uuid.random() }
     val googleID = varchar("google_id", 64).nullable().uniqueIndex()
@@ -33,6 +35,7 @@ enum class Role {
 
 /** A signed-in user's record. */
 @Serializable
+@MappedTable(Users::class)
 data class User(
     val id: String,
     val email: String,
@@ -47,19 +50,3 @@ data class User(
     val avatarUrl: String? = null,
     val listed: Boolean = true,
 )
-
-fun ResultRow.toUser() =
-    User(
-        id = this[Users.id].toString(),
-        email = this[Users.email],
-        name = this[Users.name],
-        role = this[Users.role],
-        gradYear = this[Users.gradYear],
-        github = this[Users.github],
-        linkedin = this[Users.linkedin],
-        website = this[Users.website],
-        company = this[Users.company],
-        title = this[Users.title],
-        avatarUrl = this[Users.avatarUrl],
-        listed = this[Users.listed],
-    )

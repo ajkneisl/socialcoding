@@ -4,24 +4,31 @@ import { useReviewProject } from '../features/board/queries'
 import { usePeople } from '../features/people/queries'
 import type { Person } from '../features/people/types'
 import {
-    usePresentationDates,
     useProjectDetail,
     useResubmitProject,
     useUpdateProjectDesign,
     useUpdateProjectMembers,
     useUpdateProjectTasks,
+    useUpdateSemesterDoc,
 } from '../features/projects/queries'
 import type { ProjectDetail as Detail } from '../features/projects/types'
 import { ReviewNote, StatusBadge, TeammatesBadge } from '../features/projects/StatusBadge'
 import {
     DESIGN_SECTIONS,
+    RETURNING_SECTIONS,
     DeliverablesEditor,
+    DesignDocAnswers,
     DesignDocQuestions,
     ProjectTimeline,
     TeamPicker,
+    emptyReturningDoc,
     tasksToEditable,
     type DesignDoc,
+    type DesignDocEntry,
     type EditableTask,
+    type InitialDocEntry,
+    type ReturningDoc,
+    type ReturningDocEntry,
 } from '../features/design'
 import { useAuth } from '../auth-context'
 import { Avatar } from '../components/Avatar'
@@ -123,13 +130,13 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
     const updateMembers = useUpdateProjectMembers(detail.project.id)
     const [editing, setEditing] = useState(false)
     const [memberIds, setMemberIds] = useState<string[]>([])
-    const [leadId, setLeadId] = useState(detail.teamLeadId)
+    const [leadId, setLeadId] = useState(detail.teamLeadID)
 
     // Seed with accepted members *and* outstanding invites, so re-saving the team keeps pending
     // invitees instead of silently dropping them.
     function startEditing() {
         setMemberIds([...detail.members, ...detail.pendingMembers].map((m) => m.id))
-        setLeadId(detail.teamLeadId)
+        setLeadId(detail.teamLeadID)
         updateMembers.reset()
         setEditing(true)
     }
@@ -164,8 +171,7 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
             {editing ? (
                 <div className="flex flex-col gap-[0.9rem]">
                     <p className="m-0 text-[0.85rem] text-text-soft">
-                        Search people to invite them. New teammates get a pending invite they accept
-                        from their account; promote anyone to hand off the team lead role.
+                        Search people to invite them.
                     </p>
                     <TeamPicker
                         people={people}
@@ -194,7 +200,7 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
                             <li key={m.id} className="flex items-center gap-[0.65rem]">
                                 <Avatar name={m.name} avatarUrl={m.avatarUrl} size="sm" />
                                 <span className="font-medium">{m.name}</span>
-                                {m.id === detail.teamLeadId && (
+                                {m.id === detail.teamLeadID && (
                                     <Badge variant="board">team lead</Badge>
                                 )}
                             </li>
@@ -220,7 +226,8 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
     )
 }
 
-function DesignDocSections({ detail }: { detail: Detail }) {
+/** Edits the project's own fields. The answers on a design doc are edited separately, per semester. */
+function ProjectDetailsForm({ detail, onDone }: { detail: Detail; onDone: () => void }) {
     const updateDesign = useUpdateProjectDesign(detail.project.id)
     const [editing, setEditing] = useState(false)
     const [title, setTitle] = useState('')
@@ -242,34 +249,143 @@ function DesignDocSections({ detail }: { detail: Detail }) {
     }
 
     async function save() {
+        // `required` stops empty fields, but not whitespace-only ones — which the server rejects.
+        if (title.trim() === '' || description.trim() === '') {
+            setInvalid(true)
+            return
+        }
+        setInvalid(false)
         try {
+            // No designDoc: this form doesn't touch the answers, whichever semester they're from.
             await updateDesign.mutateAsync({
                 title: title.trim(),
                 description: description.trim(),
                 repoUrl: repoUrl.trim() || undefined,
                 imageUrl: imageUrl || undefined,
-                designDoc: doc,
-                lookingForTeammates,
             })
-            setEditing(false)
+            onDone()
         } catch {
             // error surfaced via updateDesign.error below
         }
     }
 
     const busy = updateDesign.isPending
-    const error = updateDesign.error?.message ?? null
+    const error = invalid
+        ? 'Project name and description are required.'
+        : (updateDesign.error?.message ?? null)
 
     return (
-        <div className={card}>
-            <div className={sectionHead}>
-                <h3 className="m-0">Design doc</h3>
-                {detail.canEdit && !editing && (
-                    <Button variant="ghost" onClick={startEditing}>
-                        Edit answers
-                    </Button>
-                )}
-            </div>
+        <form
+            className="flex flex-col gap-[0.9rem]"
+            onSubmit={(e) => {
+                e.preventDefault()
+                save()
+            }}
+        >
+            <label>
+                Project name
+                <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                    maxLength={200}
+                />
+            </label>
+            <label>
+                Project description
+                <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                    rows={3}
+                />
+            </label>
+            <label>
+                GitHub link <span className="text-text-soft">(optional)</span>
+                <input
+                    type="url"
+                    value={repoUrl}
+                    onChange={(e) => setRepoUrl(e.target.value)}
+                    placeholder="https://github.com/…"
+                />
+            </label>
+            <label>
+                Cover image <span className="text-text-soft">(optional)</span>
+                <ImageUpload value={imageUrl} onChange={setImageUrl} />
+            </label>
+            {detail.project.status === 'APPROVED' && (
+                <p className="m-0 text-text-soft">
+                    These show on the public project page, so saving a change here sends the
+                    project back to the board for approval.
+                </p>
+            )}
+            <FormError error={error} />
+            <FormActions>
+                <Button variant="ghost" disabled={busy} onClick={onDone}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={busy}>
+                    {busy ? 'Saving…' : 'Save details'}
+                </Button>
+            </FormActions>
+        </form>
+    )
+}
+
+/** Edits the proposal answers, which stay editable for the semester the project started in. */
+function ProposalForm({
+    detail,
+    entry,
+    onDone,
+}: {
+    detail: Detail
+    entry: InitialDocEntry
+    onDone: () => void
+}) {
+    const updateDesign = useUpdateProjectDesign(detail.project.id)
+    const [doc, setDoc] = useState<DesignDoc>(entry.content)
+
+    async function save() {
+        try {
+            await updateDesign.mutateAsync({
+                title: detail.project.title,
+                description: detail.project.description,
+                repoUrl: detail.project.repoUrl ?? undefined,
+                imageUrl: detail.project.imageUrl ?? undefined,
+                designDoc: doc,
+                lookingForTeammates,
+            })
+            onDone()
+        } catch {
+            // error surfaced via updateDesign.error below
+        }
+    }
+
+    const busy = updateDesign.isPending
+
+    return (
+        <div className="flex flex-col gap-[0.9rem]">
+            {DESIGN_SECTIONS.map((section) => (
+                <div key={section.id} className="flex flex-col gap-[0.9rem]">
+                    <div>
+                        <h4 className="mb-[0.15rem] mt-3">{section.title}</h4>
+                        <p className="m-0 text-text-soft">{section.blurb}</p>
+                    </div>
+                    <DesignDocQuestions doc={doc} onChange={setDoc} section={section} />
+                </div>
+            ))}
+            <FormError error={updateDesign.error?.message ?? null} />
+            <FormActions>
+                <Button variant="ghost" disabled={busy} onClick={onDone}>
+                    Cancel
+                </Button>
+                <Button disabled={busy} onClick={save}>
+                    {busy ? 'Saving…' : 'Save answers'}
+                </Button>
+            </FormActions>
+        </div>
+    )
+}
 
             {editing ? (
                 <div className="flex flex-col gap-[0.9rem]">
@@ -324,32 +440,55 @@ function DesignDocSections({ detail }: { detail: Detail }) {
                         <Button disabled={busy} onClick={save}>
                             {busy ? 'Saving…' : 'Save answers'}
                         </Button>
-                    </FormActions>
+                    )}
                 </div>
-            ) : (
-                DESIGN_SECTIONS.map((section) => (
-                    <div key={section.id} className="mb-7">
-                        <h4 className="mb-3 text-[0.85rem] uppercase tracking-[0.1em] text-gold">
-                            {section.title}
-                        </h4>
-                        {section.questions.map((q) => (
-                            <div key={q.field} className="mb-[0.9rem]">
-                                <p className="mb-[0.15rem] font-semibold">{q.label}</p>
-                                <p className="m-0 max-w-[75ch] whitespace-pre-wrap text-text-soft">
-                                    {detail.designDoc[q.field] || 'Not answered yet.'}
-                                </p>
-                            </div>
+
+                {editing && current?.kind === 'INITIAL' ? (
+                    <ProposalForm
+                        detail={detail}
+                        entry={current}
+                        onDone={() => setEditing(false)}
+                    />
+                ) : editing ? (
+                    <SemesterDocForm
+                        detail={detail}
+                        entry={current?.kind === 'RETURNING' ? current : undefined}
+                        onDone={() => setEditing(false)}
+                    />
+                ) : current ? (
+                    <DesignDocAnswers entry={current} />
+                ) : (
+                    <div className="flex flex-col items-start gap-[0.9rem]">
+                        <p className="m-0 text-text-soft">
+                            This project hasn't filed a design doc for {detail.currentSemester} yet.
+                            Returning projects write up what they got done last semester and what
+                            they're taking on now.
+                        </p>
+                        {detail.canEdit && (
+                            <Button onClick={() => setEditing(true)}>
+                                Start {detail.currentSemester} design doc
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {past.length > 0 && (
+                <div className="mt-8">
+                    <Eyebrow>Past semesters</Eyebrow>
+                    <div className="mt-3 flex flex-col gap-3">
+                        {past.map((entry) => (
+                            <PastDoc key={entry.id} entry={entry} />
                         ))}
                     </div>
-                ))
+                </div>
             )}
-        </div>
+        </>
     )
 }
 
 function DeliverablesSection({ detail }: { detail: Detail }) {
     const updateTasks = useUpdateProjectTasks(detail.project.id)
-    const { data: presentationDates } = usePresentationDates()
     const [editing, setEditing] = useState(false)
     const [tasks, setTasks] = useState<EditableTask[]>([])
 
@@ -388,15 +527,11 @@ function DeliverablesSection({ detail }: { detail: Detail }) {
             {editing ? (
                 <div className="flex flex-col gap-[0.9rem]">
                     <p className="m-0 text-text-soft">
-                        The MVP and final presentations are required milestones — their dates are
-                        set by the board and they can't be removed.
+                        The MVP and final presentations are required milestones — they can't be
+                        removed, and their dates come from the board, set when you filed this
+                        semester's design doc.
                     </p>
-                    <DeliverablesEditor
-                        tasks={tasks}
-                        team={detail.members}
-                        onChange={setTasks}
-                        presentationDates={presentationDates}
-                    />
+                    <DeliverablesEditor tasks={tasks} team={detail.members} onChange={setTasks} />
                     <FormError error={error} />
                     <FormActions>
                         <Button variant="ghost" disabled={busy} onClick={() => setEditing(false)}>
@@ -420,6 +555,7 @@ export default function ProjectDetail() {
     const projectId = id ?? ''
     const { data: detail, error } = useProjectDetail(projectId)
     const { data: people = [] } = usePeople()
+    const [editingDetails, setEditingDetails] = useState(false)
 
     if (loading) {
         return <PageMessage>Loading…</PageMessage>
@@ -447,7 +583,7 @@ export default function ProjectDetail() {
         return <PageMessage>Loading…</PageMessage>
     }
 
-    const lead = detail.members.find((m) => m.id === detail.teamLeadId)
+    const lead = detail.members.find((m) => m.id === detail.teamLeadID)
 
     return (
         <section className={page}>
@@ -474,21 +610,16 @@ export default function ProjectDetail() {
                                         target="_blank"
                                         rel="noreferrer"
                                     >
-                                        GitHub ↗
-                                    </a>
-                                </>
-                            )}
-                        </p>
-                    </div>
-                    {detail.project.imageUrl && (
-                        <img
-                            src={detail.project.imageUrl}
-                            alt=""
-                            className="h-20 w-20 shrink-0 rounded-xl border border-line bg-bg-raised object-contain p-2"
-                        />
-                    )}
-                </div>
-                {detail.project.status === 'REJECTED' && <RejectedNotice detail={detail} />}
+                                        Edit details
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                        {detail.project.status === 'REJECTED' && (
+                            <RejectedNotice detail={detail} />
+                        )}
+                    </>
+                )}
             </div>
 
             {user.role === 'BOARD' && detail.project.status === 'PENDING' && (
@@ -499,7 +630,7 @@ export default function ProjectDetail() {
                 <DeliverablesSection detail={detail} />
                 <TeamSection detail={detail} people={people} />
             </div>
-            <DesignDocSections detail={detail} />
+            <DesignDocsSection detail={detail} />
         </section>
     )
 }

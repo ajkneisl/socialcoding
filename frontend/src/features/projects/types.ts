@@ -1,4 +1,4 @@
-import type { DesignDoc } from '../design/types'
+import type { DesignDoc, DesignDocEntry } from '../design/types'
 
 export type ProjectStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
@@ -59,8 +59,12 @@ export interface ProjectMember {
 
 export interface ProjectDetail {
     project: Project
-    designDoc: DesignDoc
-    teamLeadId: string
+    /** Every design doc the project has filed, newest semester first. */
+    designDocs: DesignDocEntry[]
+    /** The semester docs are being filed for; the doc matching it is the live one. */
+    currentSemester: string
+    /** Always set — the API falls back to the project's creator when no lead was picked. */
+    teamLeadID: string
     members: ProjectMember[]
     /** Members who have been invited but haven't accepted yet. */
     pendingMembers: ProjectMember[]

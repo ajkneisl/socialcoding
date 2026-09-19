@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth-context'
-import type { DesignDoc } from '../design/types'
+import type { DesignDoc, ReturningDoc } from '../design/types'
 import {
     acceptInvite,
     createProject,
@@ -16,6 +16,7 @@ import {
     updateProjectDesign,
     updateProjectMembers,
     updateProjectTasks,
+    updateSemesterDoc,
 } from './api'
 import type { CreateProjectRequest, Project, ProjectShowcase, TaskInput } from './types'
 
@@ -146,6 +147,20 @@ export function useUpdateProjectDesign(id: string) {
         onSuccess: (updated) => {
             queryClient.setQueryData(projectKeys.detail(id), updated)
             queryClient.invalidateQueries({ queryKey: projectKeys.all })
+        },
+    })
+}
+
+/** Files or updates this semester's returning doc; filing one sends the project back to review. */
+export function useUpdateSemesterDoc(id: string) {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (designDoc: ReturningDoc) => updateSemesterDoc(token!, id, designDoc),
+        onSuccess: (updated) => {
+            queryClient.setQueryData(projectKeys.detail(id), updated)
+            queryClient.invalidateQueries({ queryKey: projectKeys.all })
+            queryClient.invalidateQueries({ queryKey: projectKeys.mine })
         },
     })
 }

@@ -1,49 +1,31 @@
 package com.socialcoding.projects
 
-import com.socialcoding.auth.currentRole
-import com.socialcoding.auth.currentUserID
-import com.socialcoding.auth.optionalUserID
-import com.socialcoding.board.BoardSettings
-import com.socialcoding.common.ApiError
-import com.socialcoding.common.InvalidAuthorization
-import com.socialcoding.common.NotFound
-import com.socialcoding.db.MemberStatus
-import com.socialcoding.db.ProjectMembers
-import com.socialcoding.db.Users
-import io.ktor.http.HttpStatusCode
+import com.socialcoding.projects.routes.ACCEPT_INVITE
+import com.socialcoding.projects.routes.CREATE_PROJECT
+import com.socialcoding.projects.routes.DECLINE_INVITE
+import com.socialcoding.projects.routes.GET_PROJECT
+import com.socialcoding.projects.routes.INVITES
+import com.socialcoding.projects.routes.LIKE
+import com.socialcoding.projects.routes.LIST_PROJECTS
+import com.socialcoding.projects.routes.MY_PROJECTS
+import com.socialcoding.projects.routes.PRESENTATION_DATES
+import com.socialcoding.projects.routes.RESUBMIT
+import com.socialcoding.projects.routes.SHOWCASE
+import com.socialcoding.projects.routes.UPDATE_DESIGN
+import com.socialcoding.projects.routes.UPDATE_MEMBERS
+import com.socialcoding.projects.routes.UPDATE_SEMESTER_DOC
+import com.socialcoding.projects.routes.UPDATE_TASKS
 import io.ktor.server.auth.authenticate
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
-import kotlinx.serialization.Serializable
-import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.inList
-import org.jetbrains.exposed.v1.core.notInList
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.jetbrains.exposed.v1.jdbc.update
 
 /** Public project listing plus the authenticated design doc lifecycle. */
 fun Route.projectRoutes() {
-    // GET /api/projects
-    // list every approved project, ordered by hearts; like state is filled in when signed in
     authenticate("session", optional = true) {
-        get("/projects") { call.respond(listApprovedProjects(optionalUserID())) }
-
-        // GET /api/projects/{id}/showcase
-        // public project page: the project, its team, and hearts (no design doc)
-        get("/projects/{id}/showcase") {
-            val projectID = call.parameters["id"]?.toUuidOrNull() ?: throw NotFound("project")
-            val showcase =
-                projectShowcase(projectID, optionalUserID()) ?: throw NotFound("project")
-            call.respond(showcase)
-        }
+        get("/projects", LIST_PROJECTS)
+        get("/projects/{id}/showcase", SHOWCASE)
     }
 
     authenticate("session") {

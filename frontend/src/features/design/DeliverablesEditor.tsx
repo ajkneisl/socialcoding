@@ -12,7 +12,11 @@ export function DeliverablesEditor({
     tasks: EditableTask[]
     team: ProjectMember[]
     onChange: (tasks: EditableTask[]) => void
-    /** Board-set dates the MVP/Final milestones inherit; their date fields become read-only. */
+    /**
+     * Board-set dates a new project's milestones will be stamped with, previewed in their
+     * read-only date fields. Omitted once a project exists: its milestones then carry the dates
+     * they were stamped with when its design doc was filed.
+     */
     presentationDates?: PresentationDates
 }) {
     function update(i: number, patch: Partial<EditableTask>) {

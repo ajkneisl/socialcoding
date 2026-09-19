@@ -63,7 +63,7 @@ export default function People() {
     return (
         <section className={page}>
             <SectionHead eyebrow="People" title="Members">
-                Everyone who has been part of Social Coding. Sign in to add yourself.
+                Everyone who has been part of Social Coding.
             </SectionHead>
 
             {user && (

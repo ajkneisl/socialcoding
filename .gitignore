@@ -7,3 +7,4 @@ backend/build/
 backend/.gradle/
 backend/.kotlin
 googlelogin.env
+docker-compose.yml

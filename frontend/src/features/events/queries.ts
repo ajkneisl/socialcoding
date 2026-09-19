@@ -68,17 +68,28 @@ export function useDeleteEvent() {
 
 export function useAttendEvent() {
     const { token } = useAuth()
+
     return useMutation({
         mutationFn: (id: number) => attendEvent(token!, id),
     })
 }
 
-export function useAttendees(id: number, enabled: boolean) {
+/**
+ * The attendee list for an event, board-only.
+ *
+ * @param options.refetchInterval Poll every N ms, for the live check-in screen.
+ */
+export function useAttendees(
+    id: number,
+    options: { enabled?: boolean; refetchInterval?: number } = {},
+) {
     const { token } = useAuth()
+    const { enabled = true, refetchInterval } = options
     return useQuery({
         queryKey: [...eventKeys.all, id, 'attendees'],
         queryFn: () => listAttendees(token!, id),
         enabled: enabled && !!token,
+        refetchInterval,
     })
 }
 

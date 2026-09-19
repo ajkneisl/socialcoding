@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useBoardSettings } from '../../features/board/queries'
 import { AttendancePanel } from '../../features/events/AttendancePanel'
 import {
     useCreateEvent,
@@ -28,6 +29,8 @@ const emptyEvent = {
     burrowUrl: '',
     imageUrl: '',
     attendance: false,
+    /** Queues the event to post to Discord at noon on the day it happens. */
+    announce: false,
 }
 
 function PublishedRow({
@@ -61,6 +64,9 @@ function PublishedRow({
                         {new Date(event.startsAt).toLocaleString()}
                         {event.location && <> · {event.location}</>}
                         {event.attendance && <> · attendance on</>}
+                        {event.announce && (
+                            <> · {event.announcedAt ? 'announced' : 'announcing at noon'}</>
+                        )}
                     </p>
                 </div>
                 <div className="flex gap-[0.6rem]">
@@ -97,6 +103,7 @@ function toLocalInput(ms: number) {
 
 export default function BoardEvents() {
     const { data: events = [] } = useEvents()
+    const { data: settings } = useBoardSettings()
     const createEvent = useCreateEvent()
     const updateEvent = useUpdateEvent()
     const deleteEvent = useDeleteEvent()
@@ -144,6 +151,7 @@ export default function BoardEvents() {
             burrowUrl: event.burrowUrl ?? '',
             imageUrl: event.imageUrl ?? '',
             attendance: event.attendance,
+            announce: event.announce,
         })
         updateEvent.reset()
         scrollToForm()
@@ -160,6 +168,7 @@ export default function BoardEvents() {
             burrowUrl: form.burrowUrl || undefined,
             imageUrl: form.imageUrl || undefined,
             attendance: form.attendance,
+            announce: form.announce,
         }
         if (editingId != null) {
             updateEvent.mutate({ id: editingId, event: payload }, { onSuccess: reset })
@@ -173,6 +182,18 @@ export default function BoardEvents() {
     const showForm = creating || editing
     const busy = createEvent.isPending || updateEvent.isPending
     const error = (editing ? updateEvent.error : createEvent.error)?.message
+
+    const channelSet = !!settings?.announcementChannelID
+    const alreadyAnnounced = !!events.find((e) => e.id === editingId)?.announcedAt
+    /** The day the announcement goes out on — the event's own day — or null before one is picked. */
+    const announceAt = new Date(form.startsAt).getTime()
+    const announceDay = Number.isNaN(announceAt)
+        ? null
+        : new Date(announceAt).toLocaleDateString(undefined, {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+          })
 
     return (
         <>
@@ -225,7 +246,7 @@ export default function BoardEvents() {
                                     <input
                                         value={form.location}
                                         onChange={(e) => set('location', e.target.value)}
-                                        placeholder="Bruininks Hall 315"
+                                        placeholder="Bruininks Hall 432"
                                     />
                                 </label>
                                 <label>
@@ -253,6 +274,35 @@ export default function BoardEvents() {
                                 />
                                 Track attendance
                             </label>
+                            <label className="flex-row items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 cursor-pointer accent-gold p-0 disabled:cursor-not-allowed"
+                                    checked={form.announce && channelSet}
+                                    disabled={!channelSet}
+                                    onChange={(e) => set('announce', e.target.checked)}
+                                />
+                                Announce to Discord
+                            </label>
+                            {!channelSet ? (
+                                <p className="-mt-2 mb-0 font-mono text-[0.8rem] text-text-soft">
+                                    No announcement channel set.{' '}
+                                    <Link to="/board/settings" className="text-gold">
+                                        Add one in settings
+                                    </Link>{' '}
+                                    to post events to Discord.
+                                </p>
+                            ) : (
+                                form.announce && (
+                                    <p className="-mt-2 mb-0 font-mono text-[0.8rem] text-text-soft">
+                                        {alreadyAnnounced
+                                            ? 'Already posted to Discord — saving won’t post it again.'
+                                            : announceDay
+                                              ? `Posts to Discord at noon on ${announceDay}.`
+                                              : 'Posts to Discord at noon on the day of the event.'}
+                                    </p>
+                                )
+                            )}
                             <FormError error={error} />
                             <div className="flex gap-[0.6rem]">
                                 <Button disabled={!valid || busy} onClick={submit}>

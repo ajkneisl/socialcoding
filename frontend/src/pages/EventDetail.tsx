@@ -61,7 +61,7 @@ export default function EventDetail() {
                     <img
                         src={event.imageUrl}
                         alt=""
-                        className="my-6 max-h-[440px] w-full rounded-xl border border-line object-cover"
+                        className="my-6 h-auto w-full rounded-xl border border-line"
                     />
                 )}
 

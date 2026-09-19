@@ -1,6 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { usePendingProjects, useReviewProject } from '../../features/board/queries'
+import {
+    useDeleteProject,
+    usePendingProjects,
+    useReviewProject,
+} from '../../features/board/queries'
 import { useProjects } from '../../features/projects/queries'
 import type { PendingProject, Project } from '../../features/projects/types'
 import { ReviewNote, StatusBadge } from '../../features/projects/StatusBadge'
@@ -11,6 +15,49 @@ import { FormError } from '../../components/FormError'
 import { SectionHead } from '../../components/SectionHead'
 
 const row = 'border-b border-line px-1 py-[1.4rem] hover:bg-bg-raised'
+
+/** True when any of the fields contains the already-lowercased query. */
+function matches(query: string, ...fields: (string | null | undefined)[]) {
+    return fields.some((f) => f?.toLowerCase().includes(query))
+}
+
+/**
+ * Deletes a project for good, behind an inline confirmation. Rejecting leaves a team able to
+ * resubmit; this doesn't, so the second click spells out what goes with it.
+ */
+function DeleteProject({ project }: { project: Project }) {
+    const deleteProject = useDeleteProject()
+    const [confirming, setConfirming] = useState(false)
+
+    if (!confirming) {
+        return (
+            <Button variant="ghost" onClick={() => setConfirming(true)}>
+                Delete
+            </Button>
+        )
+    }
+
+    const busy = deleteProject.isPending
+
+    return (
+        <div className="flex flex-wrap items-center gap-[0.6rem]">
+            <span className="font-mono text-[0.8rem] text-text-soft">
+                Permanently delete “{project.title}” with its team, tasks, and design docs?
+            </span>
+            <Button variant="ghost" disabled={busy} onClick={() => setConfirming(false)}>
+                Cancel
+            </Button>
+            <Button
+                variant="danger"
+                disabled={busy}
+                onClick={() => deleteProject.mutate(project.id)}
+            >
+                {busy ? 'Deleting…' : 'Delete forever'}
+            </Button>
+            <FormError error={deleteProject.error?.message} />
+        </div>
+    )
+}
 
 function PendingProjectCard({ pending }: { pending: PendingProject }) {
     const reviewProject = useReviewProject()
@@ -67,11 +114,12 @@ function PendingProjectCard({ pending }: { pending: PendingProject }) {
             </p>
             <FormError error={reviewProject.error?.message} className="mt-2" />
             {rejected ? (
-                <div className="mt-[0.6rem] flex flex-col gap-[0.5rem]">
+                <div className="mt-[0.6rem] flex flex-col items-start gap-[0.5rem]">
                     {project.reviewNote && <ReviewNote note={project.reviewNote} className="m-0" />}
                     <p className="m-0 font-mono text-[0.8rem] text-text-soft">
                         Waiting for the team to make changes and resubmit.
                     </p>
+                    <DeleteProject project={project} />
                 </div>
             ) : rejecting ? (
                 <>
@@ -95,13 +143,14 @@ function PendingProjectCard({ pending }: { pending: PendingProject }) {
                     </div>
                 </>
             ) : (
-                <div className="mt-[0.9rem] flex gap-[0.6rem]">
+                <div className="mt-[0.9rem] flex flex-wrap items-center gap-[0.6rem]">
                     <Button disabled={busy} onClick={approve}>
                         Approve
                     </Button>
                     <Button variant="danger" disabled={busy} onClick={() => setRejecting(true)}>
                         Reject
                     </Button>
+                    <DeleteProject project={project} />
                 </div>
             )}
         </article>
@@ -128,9 +177,12 @@ function ApprovedProjectRow({ project }: { project: Project }) {
                     {active ? 'shown on the home page' : 'listed under past projects'}
                 </p>
             </div>
-            <Button variant="ghost" disabled={reviewProject.isPending} onClick={toggle}>
-                {active ? 'Mark inactive' : 'Mark active'}
-            </Button>
+            <div className="flex flex-wrap items-center gap-[0.6rem]">
+                <Button variant="ghost" disabled={reviewProject.isPending} onClick={toggle}>
+                    {active ? 'Mark inactive' : 'Mark active'}
+                </Button>
+                <DeleteProject project={project} />
+            </div>
         </article>
     )
 }
@@ -138,6 +190,21 @@ function ApprovedProjectRow({ project }: { project: Project }) {
 export default function BoardProjects() {
     const { data: pending = [], error } = usePendingProjects()
     const { data: approved = [] } = useProjects()
+    const [query, setQuery] = useState('')
+
+    const q = query.trim().toLowerCase()
+
+    const shownPending = useMemo(() => {
+        if (!q) return pending
+        return pending.filter(({ project, members }) =>
+            matches(q, project.title, project.description, ...members.map((m) => m.name)),
+        )
+    }, [pending, q])
+
+    const shownApproved = useMemo(() => {
+        if (!q) return approved
+        return approved.filter((p) => matches(q, p.title, p.description, p.teamLeadName))
+    }, [approved, q])
 
     return (
         <>
@@ -145,12 +212,27 @@ export default function BoardProjects() {
                 Review design docs awaiting a decision.
             </SectionHead>
 
+            {pending.length + approved.length > 0 && (
+                <input
+                    type="search"
+                    className="mb-6 w-full max-w-[440px] px-4 py-[0.6rem]"
+                    placeholder="Search by title, description, or member…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    aria-label="Search projects"
+                />
+            )}
+
             <FormError error={error?.message} />
-            {pending.length === 0 ? (
-                <p className="text-text-soft">Nothing awaiting approval..</p>
+            {shownPending.length === 0 ? (
+                <p className="text-text-soft">
+                    {q && pending.length > 0
+                        ? 'No pending projects match your search.'
+                        : 'Nothing awaiting approval..'}
+                </p>
             ) : (
                 <div className="border-t border-line">
-                    {pending.map((p) => (
+                    {shownPending.map((p) => (
                         <PendingProjectCard key={p.project.id} pending={p} />
                     ))}
                 </div>
@@ -162,11 +244,15 @@ export default function BoardProjects() {
                         Active projects appear on the home page; inactive ones move to “past
                         projects.”
                     </SectionHead>
-                    <div className="border-t border-line">
-                        {approved.map((p) => (
-                            <ApprovedProjectRow key={p.id} project={p} />
-                        ))}
-                    </div>
+                    {shownApproved.length === 0 ? (
+                        <p className="text-text-soft">No approved projects match your search.</p>
+                    ) : (
+                        <div className="border-t border-line">
+                            {shownApproved.map((p) => (
+                                <ApprovedProjectRow key={p.id} project={p} />
+                            ))}
+                        </div>
+                    )}
                 </>
             )}
         </>

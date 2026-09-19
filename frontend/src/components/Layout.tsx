@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth-context'
+import { useFooterText } from '../features/board/queries'
 import { LinkButton } from './Button'
 import { Avatar } from './Avatar'
 import { container } from './styles'
+
+/** Shown until the board sets its own line, and whenever they clear it. */
+const DEFAULT_FOOTER_TEXT = 'Weekly Meetings · Bruininks Hall 312'
 
 function Logo() {
     return (
@@ -25,6 +29,7 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 
 export default function Layout() {
     const { user } = useAuth()
+    const { data: footerText } = useFooterText()
     const [menuOpen, setMenuOpen] = useState(false)
 
     const navLinks = (
@@ -117,7 +122,7 @@ export default function Layout() {
                         </p>
 
                         <p className="m-0 max-w-[40ch] font-mono text-[0.8rem]">
-                            Weekly Meetings · Bruininks Hall 312
+                            {footerText?.trim() || DEFAULT_FOOTER_TEXT}
                         </p>
                     </div>
 
