@@ -56,7 +56,7 @@ object Environment {
     /** The version. */
     val VERSION: String by lazy {
         val stamped =
-            Health::class.java.getResourceAsStream("version.properties")?.use {
+            Environment::class.java.getResourceAsStream("/version.properties")?.use {
                 Properties().apply { load(it) }.getProperty("version")
             }
 

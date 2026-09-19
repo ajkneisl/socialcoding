@@ -1,11 +1,15 @@
 package com.socialcoding
 
+import com.socialcoding.api.Environment
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class HealthTest {
 
@@ -15,6 +19,23 @@ class HealthTest {
         application { rootModule() }
 
         assertEquals(HttpStatusCode.OK, client.get("/health").status)
+    }
+
+    /**
+     * The build stamp actually reaches the response.
+     *
+     * `processResources` writes `version.properties` to the resources root, so the lookup has to
+     * be absolute. A package-relative one just misses and reports "unknown", which is what shipped
+     * to production unnoticed until it was read off a live `/health`.
+     */
+    @Test
+    fun `health endpoint reports the build version`() = testApplication {
+        application { rootModule() }
+
+        val body = client.get("/health").bodyAsText()
+        assertFalse(body.contains(""""version":"unknown""""), "version.properties was not found: $body")
+        assertTrue(body.contains(""""version":"${Environment.VERSION}""""), body)
+        assertNotEquals("unknown", Environment.VERSION)
     }
 
     /** Readiness reports the database round trip by name. */

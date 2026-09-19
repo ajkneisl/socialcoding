@@ -12,7 +12,7 @@ import {
     useUpdateSemesterDoc,
 } from '../features/projects/queries'
 import type { ProjectDetail as Detail } from '../features/projects/types'
-import { ReviewNote, StatusBadge, TeammatesBadge } from '../features/projects/StatusBadge'
+import { ReviewNote, StatusBadge } from '../features/projects/StatusBadge'
 import {
     DESIGN_SECTIONS,
     RETURNING_SECTIONS,
@@ -40,7 +40,6 @@ import { FormError } from '../components/FormError'
 import { ImageUpload } from '../components/ImageUpload'
 import { NoticeCard } from '../components/NoticeCard'
 import { PageMessage } from '../components/PageMessage'
-import { Switch } from '../components/Switch'
 import { card, page } from '../components/styles'
 
 const sectionHead = 'mb-3 flex items-center justify-between gap-4'
@@ -229,24 +228,11 @@ function TeamSection({ detail, people }: { detail: Detail; people: Person[] }) {
 /** Edits the project's own fields. The answers on a design doc are edited separately, per semester. */
 function ProjectDetailsForm({ detail, onDone }: { detail: Detail; onDone: () => void }) {
     const updateDesign = useUpdateProjectDesign(detail.project.id)
-    const [editing, setEditing] = useState(false)
-    const [title, setTitle] = useState('')
-    const [description, setDescription] = useState('')
-    const [repoUrl, setRepoUrl] = useState('')
-    const [imageUrl, setImageUrl] = useState('')
-    const [doc, setDoc] = useState<DesignDoc>(detail.designDoc)
-    const [lookingForTeammates, setLookingForTeammates] = useState(false)
-
-    function startEditing() {
-        setTitle(detail.project.title)
-        setDescription(detail.project.description)
-        setRepoUrl(detail.project.repoUrl ?? '')
-        setImageUrl(detail.project.imageUrl ?? '')
-        setDoc(detail.designDoc)
-        setLookingForTeammates(detail.project.lookingForTeammates)
-        updateDesign.reset()
-        setEditing(true)
-    }
+    const [title, setTitle] = useState(detail.project.title)
+    const [description, setDescription] = useState(detail.project.description)
+    const [repoUrl, setRepoUrl] = useState(detail.project.repoUrl ?? '')
+    const [imageUrl, setImageUrl] = useState(detail.project.imageUrl ?? '')
+    const [invalid, setInvalid] = useState(false)
 
     async function save() {
         // `required` stops empty fields, but not whitespace-only ones — which the server rejects.
@@ -353,7 +339,6 @@ function ProposalForm({
                 repoUrl: detail.project.repoUrl ?? undefined,
                 imageUrl: detail.project.imageUrl ?? undefined,
                 designDoc: doc,
-                lookingForTeammates,
             })
             onDone()
         } catch {
@@ -387,58 +372,102 @@ function ProposalForm({
     )
 }
 
-            {editing ? (
-                <div className="flex flex-col gap-[0.9rem]">
-                    <label>
-                        Project name
-                        <input
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                            maxLength={200}
-                        />
-                    </label>
-                    <label>
-                        Project description
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            required
-                            rows={3}
-                        />
-                    </label>
-                    <label>
-                        GitHub link <span className="text-text-soft">(optional)</span>
-                        <input
-                            type="url"
-                            value={repoUrl}
-                            onChange={(e) => setRepoUrl(e.target.value)}
-                            placeholder="https://github.com/…"
-                        />
-                    </label>
-                    <label>
-                        Cover image <span className="text-text-soft">(optional)</span>
-                        <ImageUpload value={imageUrl} onChange={setImageUrl} />
-                    </label>
-                    <Switch
-                        checked={lookingForTeammates}
-                        onChange={setLookingForTeammates}
-                        label="Looking for teammates"
-                        description="Show a tag on the project so others know the team wants more people."
-                    />
-                    {DESIGN_SECTIONS.map((section) => (
-                        <div key={section.id}>
-                            <h4 className="mb-[0.15rem] mt-3">{section.title}</h4>
-                            <DesignDocQuestions doc={doc} onChange={setDoc} section={section} />
-                        </div>
-                    ))}
-                    <FormError error={error} />
-                    <FormActions>
-                        <Button variant="ghost" disabled={busy} onClick={() => setEditing(false)}>
-                            Cancel
-                        </Button>
-                        <Button disabled={busy} onClick={save}>
-                            {busy ? 'Saving…' : 'Save answers'}
+/**
+ * Fills in this semester's returning doc. Filing the first one is how a project comes back for
+ * another semester, so it goes to the board — later saves just replace the answers.
+ */
+function SemesterDocForm({
+    detail,
+    entry,
+    onDone,
+}: {
+    detail: Detail
+    entry?: ReturningDocEntry
+    onDone: () => void
+}) {
+    const save = useUpdateSemesterDoc(detail.project.id)
+    const [doc, setDoc] = useState<ReturningDoc>(entry?.content ?? emptyReturningDoc())
+
+    async function submit() {
+        try {
+            await save.mutateAsync(doc)
+            onDone()
+        } catch {
+            // error surfaced via save.error below
+        }
+    }
+
+    const busy = save.isPending
+
+    return (
+        <div className="flex flex-col gap-[0.9rem]">
+            {!entry && (
+                <p className="m-0 text-text-soft">
+                    Filing this sends {detail.project.title} back to the board for{' '}
+                    {detail.currentSemester}. You can keep editing your answers while they review.
+                </p>
+            )}
+            {RETURNING_SECTIONS.map((section) => (
+                <div key={section.id}>
+                    <h4 className="mb-[0.15rem] mt-3">{section.title}</h4>
+                    <p className="m-0 text-[0.85rem] text-text-soft">{section.blurb}</p>
+                    <DesignDocQuestions doc={doc} onChange={setDoc} section={section} />
+                </div>
+            ))}
+            <FormError error={save.error?.message ?? null} />
+            <FormActions>
+                <Button variant="ghost" disabled={busy} onClick={onDone}>
+                    Cancel
+                </Button>
+                <Button disabled={busy} onClick={submit}>
+                    {busy ? 'Saving…' : entry ? 'Save answers' : `File ${detail.currentSemester} doc`}
+                </Button>
+            </FormActions>
+        </div>
+    )
+}
+
+/** A doc from a semester that's over: listed, but folded away until someone asks for it. */
+function PastDoc({ entry }: { entry: DesignDocEntry }) {
+    return (
+        <details className={`${card} [&[open]>summary]:mb-5`}>
+            <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 [&::-webkit-details-marker]:hidden">
+                <span className="font-semibold">{entry.semester}</span>
+                <Badge variant="inactive">
+                    {entry.kind === 'INITIAL' ? 'proposal' : 'semester doc'}
+                </Badge>
+                <span className="ml-auto font-mono text-[0.8rem] text-text-soft">
+                    filed {new Date(entry.submittedAt).toLocaleDateString()}
+                </span>
+            </summary>
+            <DesignDocAnswers entry={entry} />
+        </details>
+    )
+}
+
+/**
+ * The project's design docs: this semester's expanded and editable, every earlier one kept but
+ * collapsed, so the page reads as what the team is doing now with its history underneath.
+ */
+function DesignDocsSection({ detail }: { detail: Detail }) {
+    const [editing, setEditing] = useState(false)
+    const current = detail.designDocs.find((d) => d.semester === detail.currentSemester)
+    const past = detail.designDocs.filter((d) => d.semester !== detail.currentSemester)
+
+    return (
+        <>
+            <div className={card}>
+                <div className={sectionHead}>
+                    <div>
+                        <h3 className="m-0">Design doc</h3>
+                        <p className="m-0 mt-1 font-mono text-[0.8rem] text-text-soft">
+                            {detail.currentSemester}
+                            {current?.kind === 'INITIAL' && ' · project proposal'}
+                        </p>
+                    </div>
+                    {detail.canEdit && !editing && current && (
+                        <Button variant="ghost" onClick={() => setEditing(true)}>
+                            Edit answers
                         </Button>
                     )}
                 </div>
@@ -588,27 +617,53 @@ export default function ProjectDetail() {
     return (
         <section className={page}>
             <div className={`${card} mb-8`}>
-                <div className="flex items-start justify-between gap-5">
-                    <div className="min-w-0">
-                        <Eyebrow>Design doc</Eyebrow>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <h2 className="m-0">{detail.project.title}</h2>
-                            <StatusBadge status={detail.project.status} />
-                            {detail.project.lookingForTeammates && <TeammatesBadge />}
-                        </div>
-                        <p className="my-2 max-w-[68ch] text-text-soft">
-                            {detail.project.description}
-                        </p>
-                        <p className="my-2 font-mono text-[0.8rem] text-text-soft">
-                            {lead && <>led by {lead.name} · </>}
-                            submitted {new Date(detail.project.submittedAt).toLocaleDateString()}
-                            {detail.project.repoUrl && (
-                                <>
-                                    {' · '}
-                                    <a
-                                        href={detail.project.repoUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
+                {editingDetails ? (
+                    <ProjectDetailsForm
+                        detail={detail}
+                        onDone={() => setEditingDetails(false)}
+                    />
+                ) : (
+                    <>
+                        <div className="flex items-start justify-between gap-5">
+                            <div className="min-w-0">
+                                <Eyebrow>Design doc</Eyebrow>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <h2 className="m-0">{detail.project.title}</h2>
+                                    <StatusBadge status={detail.project.status} />
+                                </div>
+                                <p className="my-2 max-w-[68ch] text-text-soft">
+                                    {detail.project.description}
+                                </p>
+                                <p className="my-2 font-mono text-[0.8rem] text-text-soft">
+                                    {lead && <>led by {lead.name} · </>}
+                                    submitted{' '}
+                                    {new Date(detail.project.submittedAt).toLocaleDateString()}
+                                    {detail.project.repoUrl && (
+                                        <>
+                                            {' · '}
+                                            <a
+                                                href={detail.project.repoUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            >
+                                                GitHub ↗
+                                            </a>
+                                        </>
+                                    )}
+                                </p>
+                            </div>
+                            <div className="flex shrink-0 items-start gap-3">
+                                {detail.project.imageUrl && (
+                                    <img
+                                        src={detail.project.imageUrl}
+                                        alt=""
+                                        className="h-20 w-20 rounded-xl border border-line bg-bg-raised object-contain p-2"
+                                    />
+                                )}
+                                {detail.canEdit && (
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setEditingDetails(true)}
                                     >
                                         Edit details
                                     </Button>

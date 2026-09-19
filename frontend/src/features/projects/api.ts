@@ -48,7 +48,7 @@ export const updateProjectDesign = (
         description: string
         repoUrl?: string
         imageUrl?: string
-        designDoc: DesignDoc
+        designDoc?: DesignDoc
         lookingForTeammates?: boolean
     },
 ) => request<ProjectDetail>(`/api/projects/${id}/design`, { method: 'PUT', body, token })

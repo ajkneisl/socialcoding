@@ -135,7 +135,9 @@ type DesignUpdate = {
     description: string
     repoUrl?: string
     imageUrl?: string
-    designDoc: DesignDoc
+    // Optional: the details form edits title/description/links without touching the answers,
+    // and the backend's UpdateDesignRequest takes designDoc as nullable.
+    designDoc?: DesignDoc
     lookingForTeammates?: boolean
 }
 
