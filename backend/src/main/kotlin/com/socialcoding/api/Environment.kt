@@ -4,6 +4,7 @@ import com.socialcoding.common.ServerError
 import io.github.cdimascio.dotenv.Dotenv
 import java.util.Properties
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient
@@ -19,6 +20,7 @@ import software.amazon.awssdk.services.ssm.model.GetParametersByPathRequest
  * with `ENV=TEST` and read the process environment instead, so they never reach AWS. `ENV` itself,
  * `AWS_REGION`, and the credentials (`AWS_PROFILE` locally, access keys in the container) come from
  * the environment or `.env`, since they're needed to reach Parameter Store in the first place.
+ * [ObjectStorage] signs its S3 calls with that same region and identity.
  */
 object Environment {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -79,13 +81,8 @@ object Environment {
         val ssm =
             SsmClient.builder()
                 .httpClient(UrlConnectionHttpClient.create())
-                .region(Region.of(fromEnvironment("AWS_REGION") ?: "us-east-1"))
-                // The SDK only sees the process environment, so a profile named in `.env` (how
-                // local dev picks its IAM user) has to be handed over explicitly.
-                .credentialsProvider(
-                    fromEnvironment("AWS_PROFILE")?.let(ProfileCredentialsProvider::create)
-                        ?: DefaultCredentialsProvider.builder().build()
-                )
+                .region(awsRegion)
+                .credentialsProvider(awsCredentials)
                 .build()
         try {
             ssm.getParametersByPathPaginator(request)
@@ -99,6 +96,20 @@ object Environment {
 
     /** A value from the process environment, falling back to `.env`. */
     private fun fromEnvironment(key: String): String? = envVar[key] ?: dotenv?.get(key)
+
+    /** The region every AWS client in the server talks to. */
+    val awsRegion: Region by lazy { Region.of(fromEnvironment("AWS_REGION") ?: "us-east-1") }
+
+    /**
+     * The identity every AWS client in the server signs with.
+     *
+     * The SDK only sees the process environment, so a profile named in `.env` (how local dev picks
+     * its IAM user) has to be handed over explicitly.
+     */
+    val awsCredentials: AwsCredentialsProvider by lazy {
+        fromEnvironment("AWS_PROFILE")?.let(ProfileCredentialsProvider::create)
+            ?: DefaultCredentialsProvider.builder().build()
+    }
 
     private fun lookup(key: String): String? =
         if (isTest) fromEnvironment(key) else parameters[key]

@@ -22,6 +22,7 @@ postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" 
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 reflections = { module = "org.reflections:reflections", version.ref = "reflections" }
 awssdk-ssm = { module = "software.amazon.awssdk:ssm", version.ref = "awssdk" }
+awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awssdk" }
 awssdk-url-connection-client = { module = "software.amazon.awssdk:url-connection-client", version.ref = "awssdk" }
 
 [plugins]

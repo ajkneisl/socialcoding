@@ -10,20 +10,28 @@ import kotlin.test.assertFailsWith
 import kotlinx.coroutines.runBlocking
 
 /**
- * The test environment has no S3 credentials, so these cover the type gate and the unconfigured
- * behaviour the deployment falls back to — signing and transfer need a real store.
+ * Tests never run the initializers, so the S3 client is never built. These cover the type gate and
+ * the unconfigured behaviour the deployment falls back to — transfer needs a real bucket.
  */
 class ObjectStorageTest {
 
     @Test
     fun `the image types the site accepts are recognized`() {
-        listOf("image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif", "image/svg+xml")
+        listOf("image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif")
             .forEach { assertTrue(ObjectStorage.supportsContentType(it), "expected $it to be accepted") }
     }
 
     @Test
     fun `everything else is refused`() {
-        listOf("application/pdf", "text/html", "application/octet-stream", "image/tiff", "")
+        listOf(
+                "application/pdf",
+                "text/html",
+                "application/octet-stream",
+                "image/tiff",
+                // Served straight from S3, an SVG is a document that can run script.
+                "image/svg+xml",
+                "",
+            )
             .forEach { assertFalse(ObjectStorage.supportsContentType(it), "expected $it to be refused") }
     }
 
@@ -37,7 +45,7 @@ class ObjectStorageTest {
 
     @Test
     fun `uploads report themselves unconfigured rather than half-working`() {
-        assertFalse(ObjectStorage.isConfigured, "no S3 credentials are set for the test suite")
+        assertFalse(ObjectStorage.isConfigured, "the S3 client is never built for the test suite")
     }
 
     @Test
@@ -61,7 +69,6 @@ class ObjectStorageTest {
         assertEquals("image/jpeg", ObjectStorage.contentTypeForKey("uploads/a.jpg"))
         assertEquals("image/webp", ObjectStorage.contentTypeForKey("uploads/a.webp"))
         assertEquals("image/gif", ObjectStorage.contentTypeForKey("uploads/a.gif"))
-        assertEquals("image/svg+xml", ObjectStorage.contentTypeForKey("uploads/a.svg"))
         assertEquals("image/png", ObjectStorage.contentTypeForKey("uploads/a.PNG"))
     }
 
@@ -71,6 +78,7 @@ class ObjectStorageTest {
         // with whatever content type the bucket felt like returning.
         listOf(
                 "uploads/a.html",
+                "uploads/a.svg",
                 "uploads/a.svg.html",
                 "uploads/noextension",
                 "uploads/a.",

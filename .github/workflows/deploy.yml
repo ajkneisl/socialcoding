@@ -1,0 +1,106 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: socialcoding-backend
+  ECS_CLUSTER: socialcoding
+  ECS_SERVICE: backend
+  ECS_TASK_FAMILY: socialcoding-backend
+  SITE_BUCKET: socialcoding-website
+  CLOUDFRONT_DISTRIBUTION: E3NKWZF7ZW12WY
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assume the deploy role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::445567081553:role/socialcodingDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push the backend image
+        id: image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
+          docker build -t "$IMAGE" -t "$REGISTRY/$ECR_REPOSITORY:latest" ./backend
+          docker push "$IMAGE"
+          docker push "$REGISTRY/$ECR_REPOSITORY:latest"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Register a task definition revision with the new image
+        id: taskdef
+        run: |
+          aws ecs describe-task-definition --task-definition "$ECS_TASK_FAMILY" \
+            --query taskDefinition > current.json
+          jq --arg IMAGE "${{ steps.image.outputs.image }}" '
+            .containerDefinitions[0].image = $IMAGE
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                  .compatibilities, .registeredAt, .registeredBy)
+          ' current.json > next.json
+          ARN=$(aws ecs register-task-definition --cli-input-json file://next.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+          echo "Registered $ARN"
+
+      - name: Roll the service
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+            --task-definition "${{ steps.taskdef.outputs.arn }}" \
+            --query 'service.deployments[0].[status,desiredCount]' --output text
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
+          echo "Service stable on ${{ steps.taskdef.outputs.arn }}"
+
+      - name: Report the deployed revision on failure
+        if: failure()
+        run: |
+          aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+            --query 'services[0].events[0:10].message' --output text | tr '\t' '\n'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build the site bundle
+        working-directory: frontend
+        run: |
+          VITE_GOOGLE_CLIENT_ID=$(aws ssm get-parameter \
+            --name /socialcoding/prod/GOOGLE_CLIENT_ID --with-decryption \
+            --query Parameter.Value --output text)
+          export VITE_GOOGLE_CLIENT_ID
+          npm ci
+          npm run build
+
+      - name: Publish the bundle
+        run: |
+          aws s3 sync frontend/dist "s3://$SITE_BUCKET/" --delete \
+            --exclude "uploads/*" --only-show-errors
+          aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION" --paths '/*' \
+            --query 'Invalidation.[Id,Status]' --output text

@@ -11,7 +11,6 @@ import io.ktor.server.routing.RoutingContext
 
 private const val IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable"
 private const val IMAGE_CSP = "default-src 'none'; sandbox"
-private const val SVG = "image/svg+xml"
 
 val SERVE_IMAGE: suspend RoutingContext.() -> Unit = handler@{
     val key = call.parameters.getAll("path")?.joinToString("/").orEmpty()
@@ -33,9 +32,6 @@ val SERVE_IMAGE: suspend RoutingContext.() -> Unit = handler@{
     call.response.headers.append(HttpHeaders.CacheControl, IMAGE_CACHE_CONTROL)
     call.response.headers.append("Content-Security-Policy", IMAGE_CSP)
     call.response.headers.append("X-Content-Type-Options", "nosniff")
-
-    if (contentType == SVG)
-        call.response.headers.append(HttpHeaders.ContentDisposition, "attachment")
 
     call.respondBytes(obj.bytes, ContentType.parse(contentType))
 }

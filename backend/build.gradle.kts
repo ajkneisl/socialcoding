@@ -51,8 +51,14 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.dotenv)
     implementation(libs.reflections)
-    // Parameter Store, over the JDK's HTTP client rather than the SDK's default Apache/Netty ones.
+    // Parameter Store and S3, over the JDK's HTTP client rather than the SDK's default
+    // Apache/Netty ones.
     implementation(libs.awssdk.ssm) {
+        exclude(group = "software.amazon.awssdk", module = "apache-client")
+        exclude(group = "software.amazon.awssdk", module = "apache5-client")
+        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
+    }
+    implementation(libs.awssdk.s3) {
         exclude(group = "software.amazon.awssdk", module = "apache-client")
         exclude(group = "software.amazon.awssdk", module = "apache5-client")
         exclude(group = "software.amazon.awssdk", module = "netty-nio-client")

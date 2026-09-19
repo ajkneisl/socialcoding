@@ -3,6 +3,7 @@ package com.socialcoding
 import com.socialcoding.api.Auth
 import com.socialcoding.api.Environment
 import com.socialcoding.api.Health.healthEndpoints
+import com.socialcoding.api.Health.probeEndpoints
 import com.socialcoding.api.Initialize
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.APIError
@@ -99,17 +100,12 @@ fun Application.rootModule() {
                 )
             }
         }
-
-        bearer("health") {
-            realm = "health-check"
-
-            authenticate { (token) ->
-                if (token == Environment.getVariable("HEALTH_CHECK_KEY")) true else null
-            }
-        }
     }
 
     routing {
+        // Liveness and readiness sit at the root, unauthenticated, for the load balancer.
+        probeEndpoints()
+
         route("/api") {
             healthEndpoints()
             authRoutes()

@@ -17,7 +17,7 @@ class UploadRoutesTest {
     @BeforeTest fun clean() = TestDatabase.reset()
 
     /**
-     * The test environment has no S3 credentials, so every read misses and the route answers 404
+     * Tests never build the S3 client, so every read misses and the route answers 404
      * whether the key was turned away by its prefix guard or simply isn't in the bucket. These pin
      * the status the client sees; telling the two apart needs a configured store.
      */
@@ -46,7 +46,7 @@ class UploadRoutesTest {
         application { rootModule() }
         TestDatabase.connect()
         val token = Fixtures.token(Fixtures.user())
-        // No S3 credentials in the test environment, so the endpoint reports it's unconfigured.
+        // No S3 client in the test environment, so the endpoint reports it's unconfigured.
         assertEquals(
             HttpStatusCode.ServiceUnavailable,
             client.post("/api/uploads/image") { bearerAuth(token) }.status)

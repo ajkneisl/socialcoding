@@ -40,7 +40,7 @@ export default function EventCheckIn() {
     // The attendance endpoint is board-only, so there's no point polling it for
     // anyone else.
     const isBoard = user?.role === 'BOARD'
-    const { data: attendees = [], isFetching } = useAttendees(eventId, {
+    const { data: attendees = [] } = useAttendees(eventId, {
         enabled: isBoard && !Number.isNaN(eventId),
         refetchInterval: REFRESH_MS,
     })
@@ -111,12 +111,6 @@ export default function EventCheckIn() {
                 <section className="min-w-0">
                     <p className="m-0 font-mono text-[0.8rem] uppercase tracking-[0.16em] text-text-faint">
                         Checked in
-                        <span
-                            aria-hidden
-                            className={`ml-2 inline-block h-[0.45rem] w-[0.45rem] rounded-full align-middle transition-opacity ${
-                                isFetching ? 'bg-gold opacity-100' : 'bg-text-faint opacity-40'
-                            }`}
-                        />
                     </p>
 
                     <p

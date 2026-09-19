@@ -49,7 +49,7 @@ val UPLOAD_IMAGE: suspend RoutingContext.() -> Unit = handler@{
                     bytes.isEmpty() -> "The uploaded file was empty."
                     oversize -> TOO_LARGE
                     !ObjectStorage.supportsContentType(contentType) ->
-                        "Unsupported image type. Use PNG, JPEG, WebP, GIF, or SVG."
+                        "Unsupported image type. Use PNG, JPEG, WebP, or GIF."
                     else -> null
                 }
             if (rejection == null) url = ObjectStorage.uploadImage(bytes, contentType)
