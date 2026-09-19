@@ -5,7 +5,7 @@ import { PageMessage } from '../../components/PageMessage'
 import { page } from '../../components/styles'
 
 function tabClass({ isActive }: { isActive: boolean }) {
-    return `-mb-px border-b-2 pb-3 text-[0.95rem] font-medium hover:no-underline ${
+    return `-mb-px shrink-0 whitespace-nowrap border-b-2 pb-3 text-[0.95rem] font-medium hover:no-underline ${
         isActive ? 'border-crimson text-gold' : 'border-transparent text-text-soft hover:text-text'
     }`
 }
@@ -32,7 +32,7 @@ export default function BoardLayout() {
             <Eyebrow>Board</Eyebrow>
             <h2 className="mb-5">Board dashboard</h2>
 
-            <nav className="mb-8 flex gap-6 border-b border-line">
+            <nav className="mb-8 flex gap-6 overflow-x-auto border-b border-line">
                 <NavLink to="/board" end className={tabClass}>
                     Overview
                 </NavLink>

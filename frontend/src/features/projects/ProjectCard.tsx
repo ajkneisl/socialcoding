@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
 import { card } from '../../components/styles'
 import { LikeButton } from './LikeButton'
-import { ReviewNote, StatusBadge } from './StatusBadge'
+import { ReviewNote, StatusBadge, TeammatesBadge } from './StatusBadge'
 import type { Project } from './types'
 
 const repoLink =
@@ -29,19 +29,23 @@ export function ProjectCard({
         <article
             className={`${card} relative flex flex-col transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-text-faint`}
         >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
                 <h3 className="m-0 min-w-0">
                     <Link to={to} className="after:absolute after:inset-0 after:content-['']">
                         {project.title}
                     </Link>
                 </h3>
-                {project.imageUrl && (
-                    <img
-                        src={project.imageUrl}
-                        alt=""
-                        className="h-12 w-12 shrink-0 rounded-md border border-line bg-bg-raised object-contain p-1"
-                    />
-                )}
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    {project.lookingForTeammates && <TeammatesBadge />}
+                    {showStatus && <StatusBadge status={project.status} />}
+                    {project.imageUrl && (
+                        <img
+                            src={project.imageUrl}
+                            alt=""
+                            className="h-12 w-12 shrink-0 rounded-md border border-line bg-bg-raised object-contain p-1"
+                        />
+                    )}
+                </div>
             </div>
             <p className="mb-3 mt-[0.45rem] text-text-soft">{project.description}</p>
             <div className="mt-auto flex items-center justify-between gap-3 pt-2 font-mono text-[0.8rem] text-text-faint">

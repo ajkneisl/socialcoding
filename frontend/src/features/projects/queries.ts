@@ -135,7 +135,8 @@ type DesignUpdate = {
     description: string
     repoUrl?: string
     imageUrl?: string
-    designDoc?: DesignDoc
+    designDoc: DesignDoc
+    lookingForTeammates?: boolean
 }
 
 export function useUpdateProjectDesign(id: string) {
