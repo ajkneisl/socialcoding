@@ -2,6 +2,7 @@ package com.socialcoding.projects.tasks
 
 import com.socialcoding.api.db.MappedTable
 import com.socialcoding.api.db.MapsTo
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -19,7 +20,7 @@ import kotlinx.serialization.Serializable
 data class ProjectTask(
     val id: Long,
     val name: String,
-    val assigneeIDs: List<String>,
+    @SerialName("assigneeIds") val assigneeIDs: List<String>,
     val dueDate: String,
     @MapsTo("depends_on_ids") val dependsOn: List<Long>,
     val milestone: Boolean,
