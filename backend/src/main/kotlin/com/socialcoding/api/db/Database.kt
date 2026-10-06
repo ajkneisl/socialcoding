@@ -157,8 +157,12 @@ object Database : Initializable {
     }
 
     override suspend fun initialize() {
+        val dbUrl = Environment.getVariable("DB_URL")
+
+        LOGGER.info("Connecting to {}", dbUrl)
+
         Database.connect(
-            Environment.getVariable("DB_URL"),
+            dbUrl,
             user = Environment.getVariable("DB_USER"),
             password = Environment.getVariable("DB_PASS"),
         )

@@ -17,12 +17,7 @@ export function ProjectCard({
     showStatus?: boolean
     linkToDoc?: boolean
 }) {
-    // The whole card is a link; the title carries it via a stretched overlay so interactive
-    // children (hearts, repo links) still work above it.
     const to = linkToDoc ? `/projects/${project.id}/doc` : `/projects/${project.id}`
-
-    // Approved is the resting state of every project that's live, so labelling it says nothing.
-    // A review still in flight does, so that's the only status worth a badge here.
     const status = showStatus && project.status !== 'APPROVED' ? project.status : null
 
     return (
@@ -35,6 +30,7 @@ export function ProjectCard({
                         {project.title}
                     </Link>
                 </h3>
+
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                     {project.lookingForTeammates && <TeammatesBadge />}
                     {showStatus && <StatusBadge status={project.status} />}
@@ -47,7 +43,7 @@ export function ProjectCard({
                     )}
                 </div>
             </div>
-            <p className="mb-3 mt-[0.45rem] text-text-soft">{project.description}</p>
+            <p className="mb-3 mt-[0.45rem] text-text-soft line-clamp-4">{project.description}</p>
             <div className="mt-auto flex items-center justify-between gap-3 pt-2 font-mono text-[0.8rem] text-text-faint">
                 {showStatus ? (
                     status && <StatusBadge status={status} />
