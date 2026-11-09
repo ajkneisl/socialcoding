@@ -5,11 +5,14 @@ import com.socialcoding.api.Environment
 import com.socialcoding.api.Health.healthEndpoints
 import com.socialcoding.api.Health.probeEndpoints
 import com.socialcoding.api.Initialize
+import com.socialcoding.api.db.query
+import com.socialcoding.board.BoardSettings
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.APIError
 import com.socialcoding.events.eventRoutes
 import com.socialcoding.people.peopleRoutes
 import com.socialcoding.projects.projectRoutes
+import com.socialcoding.projects.syncPresentationMilestones
 import com.socialcoding.storage.uploadRoutes
 import com.socialcoding.user.authRoutes
 import io.ktor.http.*
@@ -32,6 +35,9 @@ fun main(): Unit = runBlocking {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
 
     Initialize.runInitializers()
+
+    // Catch up milestones stamped before the board last changed the presentation dates.
+    query { syncPresentationMilestones(BoardSettings.presentationDates()) }
 
     embeddedServer(Netty, port = port, host = "0.0.0.0") { rootModule() }.start(wait = true)
 }

@@ -1,6 +1,7 @@
 package com.socialcoding.board
 
 import com.socialcoding.api.db.SqlTable
+import com.socialcoding.projects.syncPresentationMilestones
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.eq
@@ -143,10 +144,14 @@ object BoardSettings {
     /**
      * Stores every value in [config]. This is a whole-payload write, so callers editing one field
      * should start from [config] and copy — sending a partial payload blanks the rest.
+     *
+     * The presentation dates are also pushed onto every active project's milestones (see
+     * [syncPresentationMilestones]).
      */
     fun setConfig(config: BoardConfig): Unit = transaction {
         set(MVP_DATE, config.presentationDates.mvpDate)
         set(FINAL_DATE, config.presentationDates.finalDate)
+        syncPresentationMilestones(presentationDates())
         set(ANNOUNCEMENT_CHANNEL, config.announcementChannelID)
         set(FOOTER, config.footerText)
         val semester = config.currentSemester.trim()

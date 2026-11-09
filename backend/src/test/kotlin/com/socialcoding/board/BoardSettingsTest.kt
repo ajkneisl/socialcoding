@@ -1,9 +1,15 @@
 package com.socialcoding.board
 
+import com.socialcoding.Fixtures
 import com.socialcoding.TestDatabase
+import com.socialcoding.projects.tasks.ProjectTasks
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.uuid.Uuid
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 /**
  * Settings are a key/value table read through typed [Setting] descriptors, so the interesting
@@ -118,5 +124,68 @@ class BoardSettingsTest {
         val after = BoardSettings.config()
         assertEquals("123456789012345678", after.announcementChannelID)
         assertEquals("2026-10-01", after.presentationDates.mvpDate)
+    }
+
+    // --- Presentation milestones ------------------------------------------------------------
+
+    /** [project]'s task due dates, by name. */
+    private fun dueDates(project: Uuid): Map<String, String> = transaction {
+        ProjectTasks.selectAll()
+            .where { ProjectTasks.projectID eq project }
+            .associate { it[ProjectTasks.name] to it[ProjectTasks.dueDate] }
+    }
+
+    @Test
+    fun `changing the presentation dates moves active projects' milestones`() {
+        val project = Fixtures.project(Fixtures.user())
+        Fixtures.task(project, "MVP Presentation", dueDate = "2026-10-15", milestone = true)
+        Fixtures.task(project, "Final Presentation", dueDate = "2026-12-01", milestone = true)
+        Fixtures.task(project, "Build it", dueDate = "2026-10-20")
+
+        BoardSettings.setConfig(
+            BoardConfig(presentationDates = PresentationDates("2026-11-02", "2026-12-10"))
+        )
+
+        val dates = dueDates(project)
+        assertEquals("2026-11-02", dates["MVP Presentation"])
+        assertEquals("2026-12-10", dates["Final Presentation"])
+        assertEquals("2026-10-20", dates["Build it"], "the team's own deliverables are untouched")
+    }
+
+    @Test
+    fun `inactive projects keep the dates of the semester they ran in`() {
+        val project = Fixtures.project(Fixtures.user(), active = false)
+        Fixtures.task(project, "MVP Presentation", dueDate = "2026-03-01", milestone = true)
+
+        BoardSettings.setConfig(
+            BoardConfig(presentationDates = PresentationDates("2026-11-02", "2026-12-10"))
+        )
+
+        assertEquals("2026-03-01", dueDates(project)["MVP Presentation"])
+    }
+
+    @Test
+    fun `a blank presentation date leaves that milestone alone`() {
+        val project = Fixtures.project(Fixtures.user())
+        Fixtures.task(project, "MVP Presentation", dueDate = "2026-10-15", milestone = true)
+        Fixtures.task(project, "Final Presentation", dueDate = "2026-12-01", milestone = true)
+
+        BoardSettings.setConfig(BoardConfig(presentationDates = PresentationDates("2026-11-02", "")))
+
+        val dates = dueDates(project)
+        assertEquals("2026-11-02", dates["MVP Presentation"])
+        assertEquals("2026-12-01", dates["Final Presentation"])
+    }
+
+    @Test
+    fun `a team task that only shares a milestone's name isn't moved`() {
+        val project = Fixtures.project(Fixtures.user())
+        Fixtures.task(project, "MVP Presentation", dueDate = "2026-10-15")
+
+        BoardSettings.setConfig(
+            BoardConfig(presentationDates = PresentationDates("2026-11-02", "2026-12-10"))
+        )
+
+        assertEquals("2026-10-15", dueDates(project)["MVP Presentation"])
     }
 }

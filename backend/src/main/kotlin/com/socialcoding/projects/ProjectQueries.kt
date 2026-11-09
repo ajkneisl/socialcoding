@@ -117,6 +117,32 @@ fun stampPresentationMilestones(projectId: Uuid, dates: PresentationDates) {
 }
 
 /**
+ * Moves every active project's presentation milestones onto the board's [dates]. Called when the
+ * board changes the dates, so the milestones already stamped this semester — which the timeline and
+ * the Discord reminders read — don't keep the date that was current when each doc was filed.
+ *
+ * Inactive projects keep their dates: their milestones belong to the semester they ran in. A blank
+ * date is skipped rather than wiping the milestone. Must be inside a transaction.
+ */
+fun syncPresentationMilestones(dates: PresentationDates) {
+    val activeIds =
+        Projects.selectAll().where { Projects.active eq true }.map { it[Projects.id] }
+    if (activeIds.isEmpty()) return
+
+    val milestones =
+        ProjectTasks.selectAll()
+            .where { (ProjectTasks.milestone eq true) and (ProjectTasks.projectID inList activeIds) }
+            .map { it[ProjectTasks.id] to it[ProjectTasks.name].trim() }
+
+    PRESENTATION_MILESTONES.zip(listOf(dates.mvpDate, dates.finalDate)).forEach { (name, date) ->
+        if (date.isBlank()) return@forEach
+        val ids = milestones.filter { (_, n) -> n.equals(name, ignoreCase = true) }.map { it.first }
+        if (ids.isEmpty()) return@forEach
+        ProjectTasks.update({ ProjectTasks.id inList ids }) { it[dueDate] = date }
+    }
+}
+
+/**
  * Loads a project's current tasks as [TaskInput]s, with dependencies expressed as indices into the
  * returned list (the inverse of [replaceTasks]). Must be inside a transaction.
  */
