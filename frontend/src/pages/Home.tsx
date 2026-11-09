@@ -20,6 +20,22 @@ const BOARD_ORDER = [
     'Recruitment',
 ]
 
+const DEFAULT_COMPANIES = [
+    'Jane Street',
+    'Cognition',
+    'Coinbase',
+    'Riot Games',
+    'Tesla',
+    'NASA',
+    'Meta',
+    'Stripe',
+    'IBM',
+    'Two Sigma',
+]
+
+// Loose match so a profile's "Two Sigma" or "tesla" doesn't duplicate a default.
+const companyKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '')
+
 const TIMELINE = [
     {
         title: 'Planning phase',
@@ -54,12 +70,12 @@ export default function Home() {
     const activeProjects = useMemo(() => projects.filter((p) => p.active), [projects])
 
     const companies = useMemo(() => {
-        const seen = new Set<string>()
+        const seen = new Map(DEFAULT_COMPANIES.map((c) => [companyKey(c), c]))
         for (const p of people) {
             const c = p.company?.trim()
-            if (c) seen.add(c)
+            if (c && !seen.has(companyKey(c))) seen.set(companyKey(c), c)
         }
-        return [...seen].sort()
+        return [...seen.values()].sort()
     }, [people])
 
     const board = useMemo(

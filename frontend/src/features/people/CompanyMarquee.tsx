@@ -4,6 +4,8 @@ import { useState } from 'react'
 const DOMAIN_OVERRIDES: Record<string, string> = {
     oit: 'it.umn.edu',
     epic: 'epicsystems.com',
+    nasa: 'nasa.gov',
+    cognition: 'cognition.ai',
 }
 
 function companyDomain(name: string): string {
