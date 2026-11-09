@@ -48,6 +48,9 @@ export default function BoardLayout() {
                 <NavLink to="/board/members" className={tabClass}>
                     Members
                 </NavLink>
+                <NavLink to="/board/employers" className={tabClass}>
+                    Employers
+                </NavLink>
                 <NavLink to="/board/settings" className={tabClass}>
                     Settings
                 </NavLink>

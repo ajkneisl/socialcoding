@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import Account from './pages/Account'
 import BoardAnalytics from './pages/board/Analytics'
 import BoardLayout from './pages/board/BoardLayout'
+import BoardEmployers from './pages/board/Employers'
 import BoardEvents from './pages/board/Events'
 import BoardMembers from './pages/board/Members'
 import BoardOverview from './pages/board/Overview'
@@ -42,6 +43,7 @@ export default function App() {
                     <Route path="events" element={<BoardEvents />} />
                     <Route path="analytics" element={<BoardAnalytics />} />
                     <Route path="members" element={<BoardMembers />} />
+                    <Route path="employers" element={<BoardEmployers />} />
                     <Route path="settings" element={<BoardSettings />} />
                 </Route>
             </Route>

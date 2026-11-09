@@ -41,6 +41,7 @@ object Fixtures {
         avatarUrl: String? = null,
         gradYear: Int? = null,
         listed: Boolean = true,
+        company: String? = null,
     ): Uuid = transaction {
         Users.insert {
             it[Users.email] = email ?: "user${counter.incrementAndGet()}@test.edu"
@@ -49,6 +50,7 @@ object Fixtures {
             it[Users.avatarUrl] = avatarUrl
             it[Users.gradYear] = gradYear
             it[Users.listed] = listed
+            it[Users.company] = company
             it[createdAt] = System.currentTimeMillis()
         } get Users.id
     }

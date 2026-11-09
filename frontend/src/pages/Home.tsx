@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { usePeople } from '../features/people/queries'
 import type { Person } from '../features/people/types'
+import { useVisibleEmployers } from '../features/board/queries'
 import { useProjects } from '../features/projects/queries'
 import CompanyMarquee from '../features/people/CompanyMarquee'
 import { ProjectCard } from '../features/projects/ProjectCard'
@@ -19,22 +20,6 @@ const BOARD_ORDER = [
     'Relations',
     'Recruitment',
 ]
-
-const DEFAULT_COMPANIES = [
-    'Jane Street',
-    'Cognition',
-    'Coinbase',
-    'Riot Games',
-    'Tesla',
-    'NASA',
-    'Meta',
-    'Stripe',
-    'IBM',
-    'Two Sigma',
-]
-
-// Loose match so a profile's "Two Sigma" or "tesla" doesn't duplicate a default.
-const companyKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '')
 
 const TIMELINE = [
     {
@@ -66,17 +51,9 @@ const TIMELINE = [
 export default function Home() {
     const { data: projects = [] } = useProjects()
     const { data: people = [] } = usePeople()
+    const { data: companies = [] } = useVisibleEmployers()
 
     const activeProjects = useMemo(() => projects.filter((p) => p.active), [projects])
-
-    const companies = useMemo(() => {
-        const seen = new Map(DEFAULT_COMPANIES.map((c) => [companyKey(c), c]))
-        for (const p of people) {
-            const c = p.company?.trim()
-            if (c && !seen.has(companyKey(c))) seen.set(companyKey(c), c)
-        }
-        return [...seen.values()].sort()
-    }, [people])
 
     const board = useMemo(
         () =>

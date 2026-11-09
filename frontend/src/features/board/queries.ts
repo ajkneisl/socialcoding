@@ -1,16 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth-context'
 import type { Role, User } from '../auth/types'
+import { peopleKeys } from '../people/queries'
 import { projectKeys } from '../projects/queries'
-import type { BoardConfig } from './types'
+import type { BoardConfig, Employer, MemberProfile } from './types'
 import {
+    addEmployer,
     deleteProject,
     getBoardSettings,
     getFooterText,
+    getVisibleEmployers,
     listBoardMembers,
+    listEmployers,
     listPendingProjects,
+    removeEmployer,
     reviewProject,
+    setEmployerVisible,
     updateBoardSettings,
+    updateMemberProfile,
     updateMemberRole,
     updateMemberTitle,
 } from './api'
@@ -20,6 +27,8 @@ export const boardKeys = {
     settings: ['board', 'settings'] as const,
     members: ['board', 'members'] as const,
     footer: ['site', 'footer'] as const,
+    employers: ['board', 'employers'] as const,
+    visibleEmployers: ['site', 'employers'] as const,
 }
 
 /**
@@ -135,3 +144,53 @@ export function useUpdateMemberTitle() {
         },
     })
 }
+
+export function useUpdateMemberProfile() {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, profile }: { id: string; profile: MemberProfile }) =>
+            updateMemberProfile(token!, id, profile),
+        onSuccess: (updated) => {
+            queryClient.setQueryData<User[]>(boardKeys.members, (prev) =>
+                prev?.map((u) => (u.id === updated.id ? updated : u)),
+            )
+            queryClient.invalidateQueries({ queryKey: peopleKeys.all })
+            queryClient.invalidateQueries({ queryKey: boardKeys.employers })
+        },
+    })
+}
+
+/** The employers cleared for the home page. Public, since the home page is. */
+export function useVisibleEmployers() {
+    return useQuery({
+        queryKey: boardKeys.visibleEmployers,
+        queryFn: getVisibleEmployers,
+    })
+}
+
+export function useBoardEmployers() {
+    const { user, token } = useAuth()
+    return useQuery({
+        queryKey: boardKeys.employers,
+        queryFn: () => listEmployers(token!),
+        enabled: !!token && user?.role === 'BOARD',
+    })
+}
+
+/** Employer writes all respond with the full list, so the board's view updates in one step. */
+function useEmployerMutation<V>(write: (token: string, vars: V) => Promise<Employer[]>) {
+    const { token } = useAuth()
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (vars: V) => write(token!, vars),
+        onSuccess: (updated) => {
+            queryClient.setQueryData(boardKeys.employers, updated)
+            queryClient.invalidateQueries({ queryKey: boardKeys.visibleEmployers })
+        },
+    })
+}
+
+export const useAddEmployer = () => useEmployerMutation(addEmployer)
+export const useSetEmployerVisible = () => useEmployerMutation(setEmployerVisible)
+export const useRemoveEmployer = () => useEmployerMutation(removeEmployer)

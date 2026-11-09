@@ -8,6 +8,7 @@ import com.socialcoding.user.body
 import com.socialcoding.user.currentUserID
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
+import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.update
@@ -23,7 +24,7 @@ import org.jetbrains.exposed.v1.jdbc.update
  * @param listed Whether to show on the public member directory. Omitted leaves it unchanged.
  */
 @Serializable
-private data class UpdateProfileRequest(
+data class UpdateProfileRequest(
     val gradYear: Int? = null,
     val github: String? = null,
     val linkedin: String? = null,
@@ -39,9 +40,11 @@ private data class UpdateProfileRequest(
  * @route /api/me
  */
 val UPDATE_ME: suspend RoutingContext.() -> Unit = {
-    val userID = currentUserID()
-    val body = body<UpdateProfileRequest>()
+    call.respond(updateProfile(currentUserID(), body<UpdateProfileRequest>()))
+}
 
+/** Writes [body] onto [userID]'s profile and returns the updated user. */
+suspend fun updateProfile(userID: Uuid, body: UpdateProfileRequest): User {
     query {
         Users.update({ Users.id eq userID }) {
             it[gradYear] = body.gradYear
@@ -53,5 +56,5 @@ val UPDATE_ME: suspend RoutingContext.() -> Unit = {
         }
     }
 
-    call.respond(Users.find<User>(userID))
+    return Users.find<User>(userID)
 }

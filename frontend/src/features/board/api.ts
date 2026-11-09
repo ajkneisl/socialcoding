@@ -1,7 +1,7 @@
 import { request } from '../../lib/request'
 import type { Role, User } from '../auth/types'
 import type { PendingProject } from '../projects/types'
-import type { BoardConfig } from './types'
+import type { BoardConfig, Employer, MemberProfile } from './types'
 
 export const listPendingProjects = (token: string) =>
     request<PendingProject[]>('/api/board/projects', { token })
@@ -38,3 +38,26 @@ export const updateMemberRole = (token: string, id: string, role: Role) =>
 
 export const updateMemberTitle = (token: string, id: string, title: string | null) =>
     request<User>(`/api/board/members/${id}/title`, { method: 'PUT', body: { title }, token })
+
+export const updateMemberProfile = (token: string, id: string, profile: MemberProfile) =>
+    request<User>(`/api/board/members/${id}/profile`, { method: 'PUT', body: profile, token })
+
+/** The employers cleared for the home page. Public — the home page renders for everyone. */
+export const getVisibleEmployers = () => request<string[]>('/api/site/employers')
+
+export const listEmployers = (token: string) =>
+    request<Employer[]>('/api/board/employers', { token })
+
+export const addEmployer = (token: string, name: string) =>
+    request<Employer[]>('/api/board/employers', { method: 'POST', body: { name }, token })
+
+export const setEmployerVisible = (
+    token: string,
+    change: { name: string; visible: boolean },
+) => request<Employer[]>('/api/board/employers', { method: 'PUT', body: change, token })
+
+export const removeEmployer = (token: string, key: string) =>
+    request<Employer[]>(`/api/board/employers/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        token,
+    })

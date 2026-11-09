@@ -7,6 +7,7 @@ import com.socialcoding.api.Health.probeEndpoints
 import com.socialcoding.api.Initialize
 import com.socialcoding.api.db.query
 import com.socialcoding.board.BoardSettings
+import com.socialcoding.board.EmployerDirectory
 import com.socialcoding.board.boardRoutes
 import com.socialcoding.common.APIError
 import com.socialcoding.events.eventRoutes
@@ -38,6 +39,8 @@ fun main(): Unit = runBlocking {
 
     // Catch up milestones stamped before the board last changed the presentation dates.
     query { syncPresentationMilestones(BoardSettings.presentationDates()) }
+
+    query { EmployerDirectory.seedOnce() }
 
     embeddedServer(Netty, port = port, host = "0.0.0.0") { rootModule() }.start(wait = true)
 }

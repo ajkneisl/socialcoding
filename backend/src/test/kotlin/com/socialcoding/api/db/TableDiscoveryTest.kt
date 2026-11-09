@@ -1,5 +1,6 @@
 package com.socialcoding.api.db
 
+import com.socialcoding.board.Employers
 import com.socialcoding.board.Settings
 import com.socialcoding.events.EventAttendance
 import com.socialcoding.events.Events
@@ -32,6 +33,7 @@ class TableDiscoveryTest {
             Events,
             EventAttendance,
             Settings,
+            Employers,
             SentReminders,
         )
 

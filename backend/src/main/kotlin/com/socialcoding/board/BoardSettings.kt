@@ -97,6 +97,10 @@ object BoardSettings {
      */
     val CURRENT_SEMESTER = Setting.text("current_semester") { it.trim().take(32) }
 
+    /** Whether [EmployerDirectory.seedOnce] has already run against this database. */
+    val EMPLOYERS_SEEDED =
+        Setting("employers_seeded", false, String::toBooleanStrict, Boolean::toString)
+
     /** The stored value of [setting], or its default when unset or unreadable. */
     fun <T : Any> get(setting: Setting<T>): T = transaction {
         val stored =
